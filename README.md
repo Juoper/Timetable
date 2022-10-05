@@ -1,2 +1,2 @@
 # Stundenplan
-Stundeplan PDF auslesen und Kurstabellen anlegen
+Stundenplan PDF auslesen und Kurstabellen anlegen
