@@ -1,4 +1,6 @@
 import DateiVerarbeitung.DateiVerarbeitung;
+import models.Kurs;
+import models.Schueler;
 
 import java.io.IOException;
 import java.util.ArrayList;
