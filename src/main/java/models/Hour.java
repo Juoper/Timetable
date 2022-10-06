@@ -2,11 +2,11 @@ package models;
 
 import static Strings.Format.format;
 
-public class Stunde implements Comparable{
+public class Hour implements Comparable{
     public int tag;
     public int stunde;
 
-    public Stunde(int tag, int stunde) {
+    public Hour(int tag, int stunde) {
         this.tag = tag;
         this.stunde = stunde;
     }
@@ -28,7 +28,7 @@ public class Stunde implements Comparable{
 
     @Override
     public int compareTo(Object o) {
-        Stunde s = (Stunde) o;
+        Hour s = (Hour) o;
         if(s.tag != tag){
             return Integer.compare(tag, s.tag);
         }
@@ -46,7 +46,7 @@ public class Stunde implements Comparable{
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Stunde stunde1 = (Stunde) o;
+        Hour stunde1 = (Hour) o;
         return tag == stunde1.tag && stunde == stunde1.stunde;
     }
 }

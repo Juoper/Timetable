@@ -21,8 +21,7 @@ public class LiteSQL {
             String url = "jdbc:sqlite:" + file.getPath();
             connection = DriverManager.getConnection(url);
 
-            System.out.println("Verbindung zur Datenbank hergestellt.");
-
+            System.out.println("Successfully connected to database");
 
             stmt = connection.createStatement();
             stmt.close();
@@ -49,7 +48,6 @@ public class LiteSQL {
         }
     }
     public static ResultSet onQuery(String sql){
-
 
         try {
             return stmt.executeQuery(sql);
