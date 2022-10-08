@@ -4,29 +4,28 @@ import models.Timetable;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
+import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
+    //TODO
+    //Change every name to prename + surname
+
     public static void main(String[] args) throws IOException {
+        LiteSQL.connect();
 
-        //Change every name to prename + surname
-        //Loading an existing document
-        File file = new File("Stundenplan.pdf");
-        PDDocument document = PDDocument.load(file);
-        int pageCount = document.getDocumentCatalog().getPages().getCount();
-        
-        List<Timetable> timetables = new ArrayList<>();
+        Database.createTables();
+        //List<Timetable> timetables = extractData.extractFromPdf("Stundenplan.pdf");
 
-        for (int i = 0; i < pageCount; i++) {
-            timetables.add(extractData.generateTimetable(document.getDocumentCatalog().getPages().get(i), i));
-        }
-        
-        document.close();
-        
+        //timetables.forEach(Timetable::transferToDatabase);
 
+
+
+        LiteSQL.disconnect();
 
 //        ManagementOverAll moa = new ManagementOverAll();
 //        moa.AlleSchülerAusgeben();

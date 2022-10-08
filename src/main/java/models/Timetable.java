@@ -30,27 +30,7 @@ public class Timetable {
     }
 
     public void transferToDatabase() {
-        //TODO
-        //table name: student
-        //--------
-        //id | name
 
-        //table name: course
-        //--------
-        //name | room | teacher | day | hour
-
-        //table name: student_course
-        //--------
-        //student_id | course_id
-
-        //before doing this one TODO in Lesson.java has to be done
-        //table name: lesson
-        //--------
-        //course_id | day | hour
-
-        //table name: teacher
-        //--------
-        //abbreviation | name
 
     }
 }

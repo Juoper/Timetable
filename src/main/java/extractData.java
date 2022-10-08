@@ -3,23 +3,46 @@ import models.Student;
 import models.Teacher;
 import models.Timetable;
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
 import org.apache.pdfbox.text.PDFTextStripperByArea;
 
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class extractData {
 
     //To Do:
-    //replace Ku  Ku/P1/HA with Ku Ku/P1/HA
+    //replace Ku  Ku/P1/HA with Ku Ku/P1/HA aka remove one withspace
+
+    public static List<Timetable> extractFromPdf(String path) throws IOException {
+        //Loading an existing document
+
+        File file = new File(path);
+        PDDocument document = PDDocument.load(file);
+        int pageCount = document.getDocumentCatalog().getPages().getCount();
+
+        List<Timetable> timetables = new ArrayList<>();
+
+        for (int i = 0; i < pageCount; i++) {
+            timetables.add(extractData.generateTimetable(document.getDocumentCatalog().getPages().get(i), i));
+        }
+
+        document.close();
+
+        return timetables;
+    }
+
     public static Timetable generateTimetable(PDPage page, int id) throws IOException {
 
         PDFTextStripperByArea stripperStudentName = new PDFTextStripperByArea();
         stripperStudentName.setSortByPosition(true);
 
-        Rectangle rectStudentName = new Rectangle(180, 3609 - 3450 , 705, 40);
+        Rectangle rectStudentName = new Rectangle(180, 3609 - 3450, 705, 40);
         stripperStudentName.addRegion("studentName", rectStudentName);
         stripperStudentName.extractRegions(page);
 
