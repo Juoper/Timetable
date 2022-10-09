@@ -1,6 +1,6 @@
 
 
-import models.Timetable;
+import models.*;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
@@ -19,9 +19,12 @@ public class Main {
         LiteSQL.connect();
 
         Database.createTables();
-        //List<Timetable> timetables = extractData.extractFromPdf("Stundenplan.pdf");
+        List<Timetable> timetables = extractData.extractFromPdf("Julian_Stundenplan.pdf");
 
-        //timetables.forEach(Timetable::transferToDatabase);
+        timetables.forEach(tt -> System.out.println(tt.toString()));
+
+        timetables.forEach(Timetable::transferToDatabase);
+
 
 
 

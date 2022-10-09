@@ -1,28 +1,17 @@
 package models;
 
 public class Lesson {
-    //TODO: remove teacher, subject, room and move it to course
-    private Teacher teacher;
-    private String subject;
+    private Course course;
     private String room;
     private int day;
     private int hour;
 
-    public Lesson(Teacher teacher, String subject, String room, int day, int hour) {
-        this.teacher = teacher;
-        this.subject = subject;
+
+    public Lesson(String room, int day, int hour) {
         this.room = room;
         this.day = day;
         this.hour = hour;
 
-    }
-
-    public Teacher getTeacher() {
-        return teacher;
-    }
-
-    public String getSubject() {
-        return subject;
     }
 
     public String getRoom() {
@@ -35,5 +24,9 @@ public class Lesson {
 
     public int getHour() {
         return hour;
+    }
+
+    public String toString() {
+        return String.format("Day: %d, Hour: %d, Room: %s", day, hour, room);
     }
 }

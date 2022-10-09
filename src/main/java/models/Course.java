@@ -4,13 +4,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Course {
-    private List<Lesson> lessons;
+    private Teacher teacher;
+    private String subject;
+    public List<Lesson> lessons;
 
-    public Course() {
+    public Course(Teacher teacher, String subject) {
         this.lessons = new ArrayList<>();
+        this.teacher = teacher;
+        this.subject = subject;
     }
 
-    private void addLesson(Lesson lesson) {
-        //TODO
+    public void addLesson(Lesson lesson) {
+        lessons.add(lesson);
+    }
+
+    public Teacher getTeacher() {
+        return teacher;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public List<Lesson> getLessons() {
+        return lessons;
     }
 }

@@ -5,12 +5,18 @@ import java.util.List;
 
 public class Student {
     private int id;
-    private String name;
+    private String prename;
+    private String surname;
     private Timetable timetable;
 
     public Student(int id, String name) {
         this.id = id;
-        this.name = name;
+
+        int i = name.trim().lastIndexOf(" ");
+        String[] split = {name.substring(0, i), name.substring(i + 1)};
+
+        this.prename = split[0];
+        this.surname = split[1];
 
     }
 
@@ -18,10 +24,14 @@ public class Student {
         this.timetable = timetable;
     }
 
-    public String getName() {
-        return name;
+    public String getPrename() {
+        return prename;
     }
-    
+
+    public String getSurname() {
+        return surname;
+    }
+
     public static String formatTextLine(String text){
         String ausgabe =  text
                 .replace(" c ", " C ")

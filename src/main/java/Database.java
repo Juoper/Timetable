@@ -1,33 +1,35 @@
 public class Database {
     public static void createTables() {
 
-        //TODO
         //table name: student
         //--------
         //id | name
 
         //table name: course
         //--------
-        //id | name | room | teacher
+        //id | name | subject | teacher
 
-        //table name: lessons
+        //table name: lesson
         //--------
-        //
+        //course_id | day | hour | room
+
+        //table name: course_lesson
+        //--------
+        //course_id | lesson_id
 
         //table name: student_course
         //--------
         //student_id | course_id
 
-        //before doing this one TODO in Lesson.java has to be done
-        //table name: lesson
-        //--------
-        //course_id | day | hour
-
         //table name: teacher
         //--------
-        //abbreviation | name
+        //abbreviation | prename | surname
 
-        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS student (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
-        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS course (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, room TEXT, teacher INTEGER, day INTEGER, hour INTEGER)");
+        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS student (id INTEGER PRIMARY KEY AUTOINCREMENT, prename TEXT, surname TEXT)");
+        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS course (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, subject TEXT, teacher TEXT)");
+        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS lesson (id INTEGER PRIMARY KEY AUTOINCREMENT, course_id INTEGER, day INTEGER, hour INTEGER, room TEXT)");
+        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS course_lesson (course_id INTEGER, lesson_id INTEGER)");
+        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS student_course (student_id INTEGER, course_id INTEGER)");
+        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS teacher (abbreviation TEXT PRIMARY KEY, prename TEXT, surname TEXT)");
     }
 }

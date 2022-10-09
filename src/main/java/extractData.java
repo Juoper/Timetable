@@ -1,7 +1,4 @@
-import models.Lesson;
-import models.Student;
-import models.Teacher;
-import models.Timetable;
+import models.*;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -48,7 +45,6 @@ public class extractData {
 
         Student student = new Student(id, stripperStudentName.getTextForRegion("studentName"));
 
-
         Timetable timetable = new Timetable(student);
 
         PDFTextStripperByArea stripper = new PDFTextStripperByArea();
@@ -67,8 +63,8 @@ public class extractData {
             for (int x = 0; x < 5; x++) {
                 String text = stripper.getTextForRegion("class" + x + y);
 
-                text = text.replaceFirst("^ \r\n", "");
                 text = text.replaceFirst("^ ", "");
+                text = text.replaceFirst("^ \r\n", "");
 
                 if (text.equals("\r\n")) {
                     text = "Freistunde";
@@ -79,12 +75,22 @@ public class extractData {
                 String[] split = text.split(" ");
 
                 if (split.length == 3) {
-                    Teacher teacher = new Teacher(split[2]);
-                    Lesson lesson = new Lesson(teacher, split[0], split[1], x, y);
+                    Lesson lesson = new Lesson(split[1], x, y);
+                    Course course = new Course(new Teacher(split[2]), split[0]);
+
+                    Course currentCourse = timetable.newCourse(course);
+
+                    currentCourse.addLesson(lesson);
                     timetable.addLesson(lesson);
+
                 } else {
+
+                    System.out.println(text);
                     Teacher teacher = new Teacher(null);
-                    Lesson lesson = new Lesson(teacher, "Freistunde", null, x, y);
+                    Lesson lesson = new Lesson("", x, y);
+                    Course course = new Course(teacher, split[0]);
+                    Course currentCourse = timetable.newCourse(course);
+                    currentCourse.addLesson(lesson);
                     timetable.addLesson(lesson);
                 }
             }
