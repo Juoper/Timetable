@@ -1,9 +1,9 @@
-package DateiVerarbeitung;
+package org.timeTable.DateiVerarbeitung;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static Strings.CharIs.isNumber;
+import static org.timeTable.Strings.CharIs.isNumber;
 
 public class FileToStringList {
     private List<String> list;

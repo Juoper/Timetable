@@ -1,4 +1,4 @@
-package Strings;
+package org.timeTable.Strings;
 
 public class CharIs {
     public static boolean isUpperCase(char c){

@@ -1,20 +1,15 @@
+package org.timeTable;
 
+import org.timeTable.models.*;
 
-import models.*;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-
-import javax.xml.crypto.Data;
-import java.io.File;
 import java.io.IOException;
-import java.sql.Time;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
     //TODO
     //Change every name to prename + surname
 
+    public LiteSQL liteSQL;
     public static void main(String[] args) throws IOException {
         LiteSQL.connect();
 

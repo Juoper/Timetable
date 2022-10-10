@@ -1,4 +1,4 @@
-package models;
+package org.timeTable.models;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,8 +21,8 @@ public class Timetable {
         lessons[lesson.getDay()][lesson.getHour()] = lesson;
     }
 
-    public Course newCourse(Course course) {
-        if (courses.stream().noneMatch(c -> c.getSubject().equals(course.getSubject()))) {
+    public Course addCourse(Course course) {
+        if (courses.stream().noneMatch(c -> c.getSubject().equals(course.getSubject()) && c.getTeacher().equals(course.getTeacher()))) {
             courses.add(course);
             return course;
         } else {
@@ -54,6 +54,7 @@ public class Timetable {
     }
 
     public void transferToDatabase() {
+
 
 
     }

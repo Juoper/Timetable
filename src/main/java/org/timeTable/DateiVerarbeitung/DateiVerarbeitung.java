@@ -1,4 +1,4 @@
-package DateiVerarbeitung;
+package org.timeTable.DateiVerarbeitung;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

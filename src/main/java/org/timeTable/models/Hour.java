@@ -1,6 +1,6 @@
-package models;
+package org.timeTable.models;
 
-import static Strings.Format.format;
+import static org.timeTable.Strings.Format.format;
 
 public class Hour implements Comparable{
     public int tag;

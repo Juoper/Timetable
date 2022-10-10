@@ -1,8 +1,8 @@
-package models;
+package org.timeTable.models;
 
 import java.util.*;
 
-import static Strings.Format.format;
+import static org.timeTable.Strings.Format.format;
 
 
 public class Kurs_old {
@@ -80,12 +80,12 @@ public class Kurs_old {
     @Override
     public String toString() {
         if(stunden.size() == 0) {
-            return "models.Kurs{ " +
+            return "org.timeTable.models.Kurs{ " +
                     format(fach, 3) + " | " +
                     format(name, 10) + " | " +
                     format(lehrer, 3) + " | xxx}";
         }
-        String ausgabe = "models.Kurs{ " +
+        String ausgabe = "org.timeTable.models.Kurs{ " +
                 format(fach, 3) + " | " +
                 format(name, 10) + " | " +
                 format(lehrer, 3) + " | ";

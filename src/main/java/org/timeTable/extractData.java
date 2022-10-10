@@ -1,5 +1,6 @@
-import models.*;
-import org.apache.commons.text.StringEscapeUtils;
+package org.timeTable;
+
+import org.timeTable.models.*;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class extractData {
+    public static Year year = new Year();
 
     //To Do:
     //replace Ku  Ku/P1/HA with Ku Ku/P1/HA aka remove one withspace
@@ -45,7 +47,11 @@ public class extractData {
 
         Student student = new Student(id, stripperStudentName.getTextForRegion("studentName"));
 
+        year.addStudent(student);
         Timetable timetable = new Timetable(student);
+
+        student.addTimetable(timetable);
+
 
         PDFTextStripperByArea stripper = new PDFTextStripperByArea();
         stripper.setSortByPosition(true);
@@ -77,19 +83,19 @@ public class extractData {
                 if (split.length == 3) {
                     Lesson lesson = new Lesson(split[1], x, y);
                     Course course = new Course(new Teacher(split[2]), split[0]);
+                    lesson = year.addLesson(lesson);
+                    course = year.addCourse(course);
 
-                    Course currentCourse = timetable.newCourse(course);
+                    timetable.addCourse(course);
 
-                    currentCourse.addLesson(lesson);
+                    course.addLesson(lesson);
                     timetable.addLesson(lesson);
 
                 } else {
-
-                    System.out.println(text);
                     Teacher teacher = new Teacher(null);
                     Lesson lesson = new Lesson("", x, y);
                     Course course = new Course(teacher, split[0]);
-                    Course currentCourse = timetable.newCourse(course);
+                    Course currentCourse = timetable.addCourse(course);
                     currentCourse.addLesson(lesson);
                     timetable.addLesson(lesson);
                 }

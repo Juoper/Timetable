@@ -1,4 +1,4 @@
-package models;
+package org.timeTable.models;
 
 public class Lesson {
     private Course course;

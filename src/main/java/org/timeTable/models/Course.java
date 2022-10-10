@@ -1,4 +1,4 @@
-package models;
+package org.timeTable.models;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +14,13 @@ public class Course {
         this.subject = subject;
     }
 
-    public void addLesson(Lesson lesson) {
-        lessons.add(lesson);
+    public Lesson addLesson(Lesson lesson) {
+        if (lessons.stream().noneMatch(l -> l.getDay() == (lesson.getDay()) && l.getHour() == (lesson.getHour()))) {
+            lessons.add(lesson);
+            return lesson;
+        } else {
+            return lessons.stream().filter(l -> l.getDay() == (lesson.getDay()) && l.getHour() == (lesson.getHour())).findFirst().get();
+        }
     }
 
     public Teacher getTeacher() {

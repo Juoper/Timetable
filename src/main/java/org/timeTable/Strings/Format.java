@@ -1,4 +1,4 @@
-package Strings;
+package org.timeTable.Strings;
 
 public class Format {
     public static String format(int eingabe, int stellen){

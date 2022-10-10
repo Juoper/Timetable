@@ -1,4 +1,6 @@
-package models;
+package org.timeTable.models;
+
+import org.timeTable.LiteSQL;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,19 +10,24 @@ public class Student {
     private String prename;
     private String surname;
     private Timetable timetable;
+    public List<Course> courses;
+    private Lesson[][] lessons; // 5 Tage, 11 Stunden
 
     public Student(int id, String name) {
         this.id = id;
 
+        courses = new ArrayList<>();
+        lessons = new Lesson[5][11];
+
+
         int i = name.trim().lastIndexOf(" ");
         String[] split = {name.substring(0, i), name.substring(i + 1)};
-
         this.prename = split[0];
         this.surname = split[1];
 
     }
 
-    public void setTimetable(Timetable timetable) {
+    public void addTimetable(Timetable timetable) {
         this.timetable = timetable;
     }
 
@@ -30,6 +37,10 @@ public class Student {
 
     public String getSurname() {
         return surname;
+    }
+
+    public void transferToDatabase() {
+
     }
 
     public static String formatTextLine(String text){

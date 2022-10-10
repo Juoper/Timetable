@@ -1,3 +1,5 @@
+package org.timeTable;
+
 public class Database {
     public static void createTables() {
 
