@@ -9,8 +9,8 @@ import org.apache.pdfbox.text.PDFTextStripperByArea;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.SQLOutput;
+
 
 public class extractData {
     public static Year year = new Year();
@@ -18,41 +18,40 @@ public class extractData {
     //To Do:
     //replace Ku  Ku/P1/HA with Ku Ku/P1/HA aka remove one withspace
 
-    public static List<Timetable> extractFromPdf(String path) throws IOException {
+    public static Year extractFromPdf(String path) throws IOException {
         //Loading an existing document
-
         File file = new File(path);
         PDDocument document = PDDocument.load(file);
         int pageCount = document.getDocumentCatalog().getPages().getCount();
 
-        List<Timetable> timetables = new ArrayList<>();
-
         for (int i = 0; i < pageCount; i++) {
-            timetables.add(extractData.generateTimetable(document.getDocumentCatalog().getPages().get(i), i));
+            extractData.generateYear(document.getDocumentCatalog().getPages().get(i), i);
         }
 
         document.close();
 
-        return timetables;
+        return year;
     }
 
-    public static Timetable generateTimetable(PDPage page, int id) throws IOException {
-
+    public static void generateYear(PDPage page, int id) throws IOException {
         PDFTextStripperByArea stripperStudentName = new PDFTextStripperByArea();
         stripperStudentName.setSortByPosition(true);
 
-        Rectangle rectStudentName = new Rectangle(180, 3609 - 3450, 705, 40);
+        Rectangle rectStudentName = new Rectangle(180, 3609 - 3450, 705, 50);
         stripperStudentName.addRegion("studentName", rectStudentName);
         stripperStudentName.extractRegions(page);
 
-        Student student = new Student(id, stripperStudentName.getTextForRegion("studentName"));
+        String studentName = stripperStudentName.getTextForRegion("studentName");
+        studentName = studentName.replace("\r\n", "");
+        studentName = studentName.trim();
+
+        Student student = new Student(id, studentName);
 
         year.addStudent(student);
         Timetable timetable = new Timetable(student);
 
         student.addTimetable(timetable);
-
-
+        
         PDFTextStripperByArea stripper = new PDFTextStripperByArea();
         stripper.setSortByPosition(true);
 
@@ -77,32 +76,49 @@ public class extractData {
                 }
                 text = text.replace("\r\n ", "");
                 text = text.replace("\r\n", "");
+                text = text.replace("|GOE", "GOE");
+                text = text.replace("| GOE", " GOE");
 
                 String[] split = text.split(" ");
 
+
+
                 if (split.length == 3) {
-                    Lesson lesson = new Lesson(split[1], x, y);
-                    Course course = new Course(new Teacher(split[2]), split[0]);
+                    Lesson lesson = new Lesson(x, y);
+                    Teacher teacher = new Teacher(split[2]);
+
+                    teacher = year.addTeacher(teacher);
+
+                    Course course = new Course(teacher, split[0], split[1]);
+
+
                     lesson = year.addLesson(lesson);
                     course = year.addCourse(course);
 
                     timetable.addCourse(course);
 
                     course.addLesson(lesson);
+                    course.addStudent(student);
                     timetable.addLesson(lesson);
 
                 } else {
-                    Teacher teacher = new Teacher(null);
-                    Lesson lesson = new Lesson("", x, y);
-                    Course course = new Course(teacher, split[0]);
-                    Course currentCourse = timetable.addCourse(course);
-                    currentCourse.addLesson(lesson);
+                    Teacher teacher = new Teacher("free");
+                    teacher = year.addTeacher(teacher);
+
+                    Lesson lesson = new Lesson(x, y);
+
+                    Course course = new Course(teacher, split[0], "free");
+                    lesson = year.addLesson(lesson);
+                    course = year.addCourse(course);
+
+                    timetable.addCourse(course);
+
+                    course.addLesson(lesson);
+                    course.addStudent(student);
+
                     timetable.addLesson(lesson);
                 }
             }
         }
-
-
-        return timetable;
     }
 }

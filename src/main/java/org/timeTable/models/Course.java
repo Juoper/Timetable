@@ -5,13 +5,19 @@ import java.util.List;
 
 public class Course {
     private Teacher teacher;
+    private String name;
+    private String shortSubject;
     private String subject;
     public List<Lesson> lessons;
 
-    public Course(Teacher teacher, String subject) {
+    public List<Student> students;
+
+    public Course(Teacher teacher, String shortSubject, String name) {
         this.lessons = new ArrayList<>();
         this.teacher = teacher;
-        this.subject = subject;
+        this.shortSubject = shortSubject;
+        this.name = name;
+        this.students = new ArrayList<>();
     }
 
     public Lesson addLesson(Lesson lesson) {
@@ -20,6 +26,15 @@ public class Course {
             return lesson;
         } else {
             return lessons.stream().filter(l -> l.getDay() == (lesson.getDay()) && l.getHour() == (lesson.getHour())).findFirst().get();
+        }
+    }
+
+    public Student addStudent(Student student) {
+        if (students.stream().noneMatch(s -> s.getPrename().equals(student.getPrename()) && s.getSurname().equals(student.getSurname()))) {
+            students.add(student);
+            return student;
+        } else {
+            return students.stream().filter(s -> s.getPrename().equals(student.getPrename()) && s.getSurname().equals(student.getSurname())).findFirst().get();
         }
     }
 
@@ -33,5 +48,17 @@ public class Course {
 
     public List<Lesson> getLessons() {
         return lessons;
+    }
+
+    public String getShortSubject() {
+        return shortSubject;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<Student> getStudents() {
+        return students;
     }
 }

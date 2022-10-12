@@ -19,7 +19,6 @@ public class Student {
         courses = new ArrayList<>();
         lessons = new Lesson[5][11];
 
-
         int i = name.trim().lastIndexOf(" ");
         String[] split = {name.substring(0, i), name.substring(i + 1)};
         this.prename = split[0];
@@ -39,8 +38,16 @@ public class Student {
         return surname;
     }
 
+    public Timetable getTimetable() {
+        return timetable;
+    }
+
     public void transferToDatabase() {
 
+    }
+
+    public String toString() {
+        return String.join(" ", prename, surname);
     }
 
     public static String formatTextLine(String text){

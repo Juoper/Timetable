@@ -14,6 +14,12 @@ public class Lesson {
 
     }
 
+    public Lesson(int day, int hour) {
+        this.day = day;
+        this.hour = hour;
+
+    }
+
     public String getRoom() {
         return room;
     }

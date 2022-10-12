@@ -7,8 +7,7 @@ import java.util.List;
 
 public class Timetable {
     private Student student;
-
-    public List<Course> courses;
+    private List<Course> courses;
     private Lesson[][] lessons; // 5 Tage, 11 Stunden
 
     public Timetable(Student student) {
@@ -22,11 +21,11 @@ public class Timetable {
     }
 
     public Course addCourse(Course course) {
-        if (courses.stream().noneMatch(c -> c.getSubject().equals(course.getSubject()) && c.getTeacher().equals(course.getTeacher()))) {
+        if (courses.stream().noneMatch(c -> c.getName().equals(course.getName()) && c.getTeacher().getAbbreviation().equals(course.getTeacher().getAbbreviation()))) {
             courses.add(course);
             return course;
         } else {
-            return courses.stream().filter(c -> c.getSubject().equals(course.getSubject())).findFirst().get();
+            return courses.stream().filter(c -> c.getName().equals(course.getName()) && c.getTeacher().getAbbreviation().equals(course.getTeacher().getAbbreviation())).findFirst().get();
 
         }
     }
@@ -39,12 +38,12 @@ public class Timetable {
 
                 Lesson lesson = lessons[day][hour];
 
-                Course course = new Course(null, "test");
+                Course course = new Course(null, "error", "000");
 
                 if ( courses.stream().anyMatch(c -> c.getLessons().contains(lesson))){
                     course = courses.stream().filter(c -> c.getLessons().contains(lesson)).findFirst().get();
                 }
-                sb.append(StringUtils.center(String.join(" ", course.getSubject(), lessons[day][hour].getRoom(), course.getTeacher().getAbbreviation()),30));
+                sb.append(StringUtils.center(String.join(" ", course.getName(), course.getTeacher().getAbbreviation()),20));
 
 
             }
@@ -55,9 +54,13 @@ public class Timetable {
 
     public void transferToDatabase() {
 
-
-
     }
+
+    public List<Course> getCourses() {
+        return courses;
+    }
+
+    
 
     public void print() {
         System.out.println("test");
