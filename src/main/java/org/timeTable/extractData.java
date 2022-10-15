@@ -1,5 +1,6 @@
 package org.timeTable;
 
+import org.apache.commons.lang3.StringUtils;
 import org.timeTable.models.*;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -45,13 +46,13 @@ public class extractData {
         studentName = studentName.replace("\r\n", "");
         studentName = studentName.trim();
 
-        Student student = new Student(id, studentName);
+        Student student = new Student(id + 1, studentName);
 
         year.addStudent(student);
         Timetable timetable = new Timetable(student);
 
         student.addTimetable(timetable);
-        
+
         PDFTextStripperByArea stripper = new PDFTextStripperByArea();
         stripper.setSortByPosition(true);
 
@@ -74,16 +75,30 @@ public class extractData {
                 if (text.equals("\r\n")) {
                     text = "Freistunde";
                 }
-                text = text.replace("\r\n ", "");
-                text = text.replace("\r\n", "");
-                text = text.replace("|GOE", "GOE");
-                text = text.replace("| GOE", " GOE");
+
+                text = text
+                        .replace("\r\n ", "")
+                        .replace("\r\n", "");
+
 
                 String[] split = text.split(" ");
 
 
-
                 if (split.length == 3) {
+                    split[2] = split[2].toUpperCase();
+
+                    split[0] = removeTypos(split[0]);
+                    split[1] = removeTypos(split[1]);
+                    split[2] = removeTypos(split[2]);
+
+                    if (split[2].equals("ISE") && split[1].equals("QWU")) {
+                        split[1] = "QWU_ISE";
+                    }
+
+                    if (split[1].equals("Smw/P1/")) {
+                        split[1] = split[1] + split[2];
+                    }
+
                     Lesson lesson = new Lesson(x, y);
                     Teacher teacher = new Teacher(split[2]);
 
@@ -120,5 +135,66 @@ public class extractData {
                 }
             }
         }
+    }
+
+    public static String removeTypos(String text) {
+        
+
+        return text
+
+                .replace("|GOE", "GOE")
+                .replace("| GOE", " GOE")
+                .replace(" c ", " C ")
+                .replace("|", "")
+                .replace("g9e0", "geo")
+                .replace("QAWU", "QWU")
+                .replace("1m?", "1m7")
+                .replace("Kw", "Ku/")
+                .replace("9", "g")
+                .replace("14", "1d")
+                .replace(" 6", " C")
+                .replace("/w", "/W")
+                .replace("I/", "/")
+                .replace("Cc", "C")
+                .replace("Smwi", "Smw")
+                .replace("Wi", "W1")
+                .replace("Kuw", "Ku")
+                .replace("WRI", "WR")
+                .replace("Ww", "W")
+                .replace("Kk", "k")
+                .replace("kK", "k")
+                .replace("1K3", "1k3")
+                .replace("Twr", "wr")
+                .replace("PA", "P1")
+                .replace("/p", "/P")
+                .replace("/0", "/O")
+                .replace("KuP", "Ku/P")
+                .replace("ge0", "geo")
+                .replace("15-11", "1s-t1")
+                .replace("MIW", "M/W")
+                .replace("_psylps2", "psy/ps2")
+                .replace("Pi", "P1")
+                .replace("/Ps", "/ps")
+                .replace("1smw7?", "1smw7")
+                .replace("7?", "7")
+                .replace("?", "")
+                .replace("iwr", "1wr")
+                .replace("185", "1e5")
+                .replace("TurF", "Tuf")
+                .replace("OO", "OE")
+                .replace("]", "")
+                .replace("voS", "vo5")
+                .replace("GW1", "G/W1")
+                .replace("Tuf", "TuF")
+                .replace("Tur", "TuF")
+                .replace("wS", "w5")
+                .replace("//", "/")
+                .replace("1smw ", "1smw7 ")
+                .replace("/OE", "/O")
+                .replace("HAl", "HA")
+                .replace("HE)", "HE")
+                .replace("nSm", "n Sm")
+                .replace("WEL", "WEI")
+                ;
     }
 }

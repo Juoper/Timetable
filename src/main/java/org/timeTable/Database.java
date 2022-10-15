@@ -28,7 +28,7 @@ public class Database {
         //id | abbreviation | prename | surname
 
         LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS student (id INTEGER PRIMARY KEY AUTOINCREMENT, prename TEXT, surname TEXT)");
-        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS course (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, subject TEXT)");
+        LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS course (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, subject TEXT, shortsubject TEXT)");
         LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS lesson (id INTEGER PRIMARY KEY AUTOINCREMENT, day INTEGER NOT NULL, hour INTEGER NOT NULL, room TEXT)");
         LiteSQL.onUpdate("CREATE TABLE IF NOT EXISTS teacher (id INTEGER PRIMARY KEY AUTOINCREMENT, abbreviation TEXT , prename TEXT, surname TEXT)");
 

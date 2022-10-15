@@ -1,7 +1,7 @@
 package org.timeTable.models;
 
 public class Teacher {
-
+    int id;
     String abbreviation;
     String prename;
     String surname;
@@ -14,6 +14,15 @@ public class Teacher {
 
     public String getAbbreviation() {
         return abbreviation;
+    }
+
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getPrename() {

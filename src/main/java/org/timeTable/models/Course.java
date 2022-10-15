@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Course {
+    int id;
     private Teacher teacher;
     private String name;
     private String shortSubject;
@@ -13,6 +14,7 @@ public class Course {
     public List<Student> students;
 
     public Course(Teacher teacher, String shortSubject, String name) {
+        this.id = -1;
         this.lessons = new ArrayList<>();
         this.teacher = teacher;
         this.shortSubject = shortSubject;
@@ -36,6 +38,13 @@ public class Course {
         } else {
             return students.stream().filter(s -> s.getPrename().equals(student.getPrename()) && s.getSurname().equals(student.getSurname())).findFirst().get();
         }
+    }
+
+    public int getId() {
+        return id;
+    }
+    public void setId(int id) {
+        this.id = id;
     }
 
     public Teacher getTeacher() {

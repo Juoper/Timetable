@@ -30,6 +30,10 @@ public class Student {
         this.timetable = timetable;
     }
 
+    public int getId() {
+        return id;
+    }
+
     public String getPrename() {
         return prename;
     }

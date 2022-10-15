@@ -29,6 +29,7 @@ public class Year {
 
         }
     }
+
     public Lesson addLesson(Lesson lesson) {
         if (lessons.stream().noneMatch(l -> l.getDay() == (lesson.getDay()) && l.getHour() == (lesson.getHour()))) {
             lessons.add(lesson);
@@ -62,4 +63,7 @@ public class Year {
     }
 
 
+    public List<Teacher> getTeachers() {
+        return teachers;
+    }
 }
