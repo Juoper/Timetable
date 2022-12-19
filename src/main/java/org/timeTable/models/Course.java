@@ -12,11 +12,20 @@ public class Course {
     public List<Lesson> lessons;
 
     public List<Student> students;
-
+    
     public Course(Teacher teacher, String shortSubject, String name) {
         this.id = -1;
         this.lessons = new ArrayList<>();
         this.teacher = teacher;
+        this.shortSubject = shortSubject;
+        this.name = name;
+        this.students = new ArrayList<>();
+    }
+
+    public Course(int id, String shortSubject, String name) {
+        this.id = id;
+        this.lessons = new ArrayList<>();
+        this.teacher = null;
         this.shortSubject = shortSubject;
         this.name = name;
         this.students = new ArrayList<>();
@@ -69,5 +78,17 @@ public class Course {
 
     public List<Student> getStudents() {
         return students;
+    }
+
+    public String toString() {
+        return "Course{" +
+                "id=" + id +
+                ", teacher=" + teacher +
+                ", name='" + name + '\'' +
+                ", shortSubject='" + shortSubject + '\'' +
+                ", subject='" + subject + '\'' +
+                ", lessons=" + lessons +
+                ", students=" + students +
+                '}';
     }
 }
