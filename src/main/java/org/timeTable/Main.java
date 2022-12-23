@@ -2,14 +2,13 @@ package org.timeTable;
 
 import org.apache.commons.text.StringEscapeUtils;
 import org.timeTable.CommunicationLayer.CommunicationLayer;
+import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
+import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
+import org.timeTable.CommunicationLayer.services.ComServiceDiscord;
 import org.timeTable.TimeTableScraper.TimeTableScrapper;
 import org.timeTable.models.*;
 
 import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.List;
 
 public class Main {
     //TODO
@@ -23,8 +22,8 @@ public class Main {
         TimeTableScrapper timeTableScrapper = new TimeTableScrapper();
 
         CommunicationLayer communicationLayer = new CommunicationLayer(timeTableScrapper);
-
-        LiteSQL.disconnect();
+        
+        ComServiceDiscord discord = new ComServiceDiscord(communicationLayer);
     }
 
 }

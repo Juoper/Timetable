@@ -41,9 +41,7 @@ public class LessonResponseDeserializer implements JsonDeserializer<LessonRespon
             if (date.equals(localDate)) {
 
                 Course course = courses.stream().filter(c -> c.getId() == id).findFirst().get();
-
-                System.out.println(course.getShortSubject() + "   " + cellstate);
-
+                
                 Lesson lesson = new Lesson(course, Integer.parseInt(date), hour, cellstate);
 
 

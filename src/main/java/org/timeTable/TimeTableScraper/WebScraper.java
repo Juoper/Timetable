@@ -10,7 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.timeTable.TimeTableScraper.ParameterStringBuilder.getParamsString;
+import static org.timeTable.TimeTableScraper.TimeTableScrapper.getParamsString;
+
 
 public class WebScraper {
 
