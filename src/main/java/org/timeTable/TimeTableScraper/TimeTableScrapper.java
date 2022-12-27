@@ -6,10 +6,13 @@ import org.timeTable.models.*;
 import org.timeTable.models.json.Element;
 import org.timeTable.models.json.ElementPeriod;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
@@ -26,7 +29,8 @@ public class TimeTableScrapper {
         //wrap everything so it pulls the timetable regularly and not only at the creation of the object
         WebScraper wS = new WebScraper();
         LocalDate date = LocalDate.now();
-        String timeTable = wS.getTimetable(date);
+        File file = new File("example.json");
+        String timeTable = Files.readString(Path.of(file.toURI())); //wS.getTimetable(date);
         
 
         //System.out.println(timeTable);

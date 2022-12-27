@@ -1,6 +1,6 @@
 package org.timeTable;
-
-import org.apache.commons.text.StringEscapeUtils;
+import org.apache.logging.slf4j.SLF4JLogger;
+import org.springframework.boot.logging.Slf4JLoggingSystem;
 import org.timeTable.CommunicationLayer.CommunicationLayer;
 import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
 import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
@@ -9,6 +9,8 @@ import org.timeTable.TimeTableScraper.TimeTableScrapper;
 import org.timeTable.models.*;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 public class Main {
     //TODO
@@ -18,6 +20,10 @@ public class Main {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         LiteSQL.connect();
+
+
+        
+
 
         TimeTableScrapper timeTableScrapper = new TimeTableScrapper();
 

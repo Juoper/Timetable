@@ -30,7 +30,7 @@ public class WebScraper {
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
 
-        getBearerToken();
+        //getBearerToken();
 
         //timeTable = getTimetable();
     }

@@ -1,5 +1,9 @@
 package org.timeTable.CommunicationLayer;
 
+import org.timeTable.models.Course;
+
+import java.util.ArrayList;
+
 public abstract class CommunicationService {
 
     //Each Communication Service needs to have its own typeID, communicationID, studentID
@@ -10,7 +14,7 @@ public abstract class CommunicationService {
     CommunicationLayer communicationLayer;
 
     public CommunicationService(CommunicationLayer communicationLayer) {
-        communicationLayer = communicationLayer.registerCommunicationService(this);
+        this.communicationLayer = communicationLayer.registerCommunicationService(this);
 
     }
 
@@ -18,7 +22,7 @@ public abstract class CommunicationService {
         return communicationLayer;
     }
 
-    public abstract void sendTimetableNews();
+    public abstract void sendTimetableNews(int subscription_id, ArrayList<Course> courses);
 
     public abstract void stopService();
 
