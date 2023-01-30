@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Course {
     int id;
+    int untisId;
     private Teacher teacher;
     private String name;
     private String shortSubject;
@@ -22,8 +23,9 @@ public class Course {
         this.students = new ArrayList<>();
     }
 
-    public Course(int id, String shortSubject, String name) {
+    public Course(int id, int untisId, String shortSubject, String name) {
         this.id = id;
+        this.untisId = untisId;
         this.lessons = new ArrayList<>();
         this.teacher = null;
         this.shortSubject = shortSubject;
@@ -56,6 +58,9 @@ public class Course {
         this.id = id;
     }
 
+    public int getUntisId() {
+        return untisId;
+    }
     public Teacher getTeacher() {
         return teacher;
     }
@@ -89,6 +94,26 @@ public class Course {
                 ", subject='" + subject + '\'' +
                 ", lessons=" + lessons +
                 ", students=" + students +
+                ", untisId=" + untisId +
                 '}';
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+
+        // If the object is compared with itself then return true
+        if (o == this) {
+            return true;
+        }
+
+        /* Check if o is an instance of Complex or not
+          "null instanceof [type]" also returns false */
+        if (!(o instanceof Course c)) {
+            return false;
+        }
+
+        return c.getId() == this.getId();
+
     }
 }

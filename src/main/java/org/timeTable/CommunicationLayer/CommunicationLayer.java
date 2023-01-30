@@ -1,39 +1,155 @@
 package org.timeTable.CommunicationLayer;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
 import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
+import org.timeTable.CommunicationLayer.services.ComServiceDiscord;
 import org.timeTable.LiteSQL;
 import org.timeTable.TimeTableScraper.TimeTableScrapper;
-import org.timeTable.models.Student;
+import org.timeTable.models.Course;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Objects;
+import java.time.*;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class CommunicationLayer {
     ArrayList<CommunicationService> comServices;
+    ScheduledExecutorService scheduledExecutorService;
+    private final TimeTableScrapper timeTableScrapper;
+
+    private final HashMap<Integer, ScheduledFuture<?>> runnableHashMap;
+
     public CommunicationLayer(TimeTableScrapper timeTableScrapper) {
+        this.timeTableScrapper = timeTableScrapper;
         comServices = new ArrayList<>();
+        runnableHashMap = new HashMap<>();
+        scheduledExecutorService = Executors.newScheduledThreadPool(1);
+
+        pullTimers();
+        //sendTimetableNews(12);
+
     }
-
-    public void subscribeTimtableNews(Student student, int typeID) {
-
-
-        LiteSQL.onUpdate("INSERT INTO subscriptions (student_id, type_id) VALUES ('" + student.getId() + "', '" + typeID + "')");
-        
-    }
-
-    //Student which student to get the courses for
-
-    //public unsubscribeTimtableNews (Student student)
-
-    //private sendTimetableNews (TimetableScrapper timetableScrapper)
-
     public CommunicationLayer registerCommunicationService(CommunicationService service) {
         comServices.add(service);
         return this;
     }
+
+    private void pullTimers(){
+        ResultSet resultSet = LiteSQL.onQuery("SELECT * FROM subscriptions WHERE verified = 1");
+
+        try {
+            while (resultSet.next()) {
+                //fix times that are in the past
+                int hour = resultSet.getInt("update_time") / 100;
+                int minute = resultSet.getInt("update_time") % 100;
+                int subscription_id = resultSet.getInt("subscription_id");
+                int offsetDays = resultSet.getInt("offsetDays");
+
+                newTimer(subscription_id, hour, minute, offsetDays);
+
+            }
+            resultSet.close();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void newTimer (int subscription_id, int hour, int minute, int offsetDays) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextRun = now.withHour(hour).withMinute(minute).withSecond(0);
+
+        Duration duration = Duration.between(now, nextRun);
+        long initialDelay = duration.getSeconds();
+
+        if (initialDelay < 0 ){
+            initialDelay = TimeUnit.HOURS.toSeconds(24) + initialDelay;
+        }
+
+        Runnable runnable = new Runnable(){
+            @Override
+            public void run() {
+                try {
+                    Calendar c = Calendar.getInstance();
+
+                    if (c.get(Calendar.DAY_OF_WEEK) == 6 - offsetDays){
+                        scheduledExecutorService.schedule(this, 3, TimeUnit.DAYS);
+                    }else {
+                        scheduledExecutorService.schedule(this, 1, TimeUnit.DAYS);
+                    }
+                    sendTimetableNews(subscription_id);
+                } catch (Exception ex) {
+                    Thread t = Thread.currentThread();
+                    t.getUncaughtExceptionHandler().uncaughtException(t, ex);
+                }
+            }
+        };
+        ScheduledFuture<?> schedule = scheduledExecutorService.schedule(runnable, initialDelay, TimeUnit.SECONDS);
+        runnableHashMap.put(subscription_id, schedule);
+
+    }
+    //Student which student to get the courses for
+
+    //public unsubscribeTimtableNews (Student student)
+
+    private void sendTimetableNews (int subscription_id) {
+        ResultSet set = LiteSQL.onQuery("SELECT * FROM subscriptions WHERE subscription_id = " + subscription_id);
+        if (set == null) return;
+
+        int student_id = 0;
+        int type_id = -1;
+        int offsetDays = -1;
+        
+        try {
+            student_id = set.getInt("student_id");
+            type_id = set.getInt("type_id");
+            offsetDays = set.getInt("offsetDays");
+            set.close();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        
+        LocalDate lDate = LocalDate.now().plusDays(offsetDays);
+        
+        ArrayList<Course> courses = timeTableScrapper.getCourses(lDate);
+        ResultSet coursesSet = LiteSQL.onQuery("SELECT * FROM student_course WHERE student_id = " + student_id);
+        ArrayList<Course> studentCourses = new ArrayList<>();
+        try {
+            while (coursesSet.next()) {
+                int course_id = coursesSet.getInt("course_id");
+                if (courses.stream().anyMatch(c -> c.getId() == course_id)){
+                    Course course = courses.stream().filter(c -> c.getId() == course_id).findFirst().get();
+
+                    if (!course.getLessons().isEmpty()){
+                        studentCourses.add(course);
+                    }
+                }
+
+            }
+            coursesSet.close();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        
+
+        CommunicationService comService = null;
+        switch (type_id){
+            case 0:
+                //Discord
+                comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceDiscord).findFirst().get();
+                comService.sendTimetableNews(subscription_id, studentCourses);
+                break;
+            default:
+                break;
+        }
+
+    }
+
 
     public int getStudentIdByName(String prename, String surname) throws noStudentFoundException, moreThenOneStudentFoundException {
 
@@ -43,19 +159,44 @@ public class CommunicationLayer {
         StringBuilder builder = new StringBuilder();
         builder.append("SELECT id FROM student WHERE ");
 
+        int namesGiven = -1;
         if (prenameGiven) {
-            builder.append("prename = '").append(prename).append("'");
+            builder.append("prename = ?");
+            namesGiven = 0;
         }
         if (surnameGiven && prenameGiven) {
             builder.append(" AND ");
+            namesGiven = 1;
         }
         if (surnameGiven) {
-            builder.append("surname = '").append(surname).append("'");
+            builder.append("surname = ?");
+            namesGiven = 2;
+        }
+
+        PreparedStatement stmt = LiteSQL.prepareStatement(builder.toString());
+
+        try {
+            switch (namesGiven){
+                case 0:
+                    stmt.setString(1, prename);
+                    break;
+                case 1:
+                    stmt.setString(1, prename);
+                    stmt.setString(2, surname);
+                    break;
+                case 2:
+                    stmt.setString(1, surname);
+
+                    break;
+                default:
+                    throw new noStudentFoundException("No names given");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
 
-        System.out.println(builder.toString());
-        ResultSet set = LiteSQL.onQuery(builder.toString());
+        ResultSet set = LiteSQL.executeQuery(stmt);
         int id = 0;
         try {
             if(set != null){
@@ -74,7 +215,14 @@ public class CommunicationLayer {
         }
         return id;
     }
-    //private sendNewsTimer
+
+    protected void stopTimer(int subscriptionId) {
+        ScheduledFuture<?> scheduledFuture = runnableHashMap.get(subscriptionId);
+        try {
+            scheduledFuture.cancel(false);
+
+        }catch (NullPointerException ignored){}
+    }
 
 }
 

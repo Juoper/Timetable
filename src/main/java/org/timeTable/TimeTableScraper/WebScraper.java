@@ -1,24 +1,23 @@
 package org.timeTable.TimeTableScraper;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.timeTable.TimeTableScraper.TimeTableScrapper.getParamsString;
 
 
 public class WebScraper {
 
     private CookieManager cm;
     private HttpClient client;
-    private String bearerToken;
-    //public String timeTable;
 
     public WebScraper() throws IOException, InterruptedException {
         //https://nessa.webuntis.com/WebUntis/j_spring_security_check?school=gym-ottobrunn&j_username=q11&j_password=GO%23webuntis01&token=
@@ -30,9 +29,8 @@ public class WebScraper {
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
 
-        //getBearerToken();
+        getBearerToken();
 
-        //timeTable = getTimetable();
     }
 
     public String getTimetable(LocalDate date) throws IOException, InterruptedException {
@@ -54,8 +52,7 @@ public class WebScraper {
         String params = getParamsString(parameters);
 
         String requestUrl = "https://nessa.webuntis.com/WebUntis/api/public/timetable/weekly/data?" + params;
-        System.out.println(requestUrl);
-        
+
         var request = HttpRequest.newBuilder(
                         URI.create(requestUrl))
                 .header("accept", "*/*")
@@ -107,6 +104,23 @@ public class WebScraper {
 
         response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        bearerToken = response.body();
+        String bearerToken = response.body();
+    }
+
+    public static String getParamsString(Map<String, String> params)
+            throws UnsupportedEncodingException {
+        StringBuilder result = new StringBuilder();
+
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            result.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8));
+            result.append("=");
+            result.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
+            result.append("&");
+        }
+
+        String resultString = result.toString();
+        return resultString.length() > 0
+                ? resultString.substring(0, resultString.length() - 1)
+                : resultString;
     }
 }

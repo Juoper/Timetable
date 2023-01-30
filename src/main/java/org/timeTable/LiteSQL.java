@@ -14,7 +14,9 @@ public class LiteSQL {
         connection = null;
 
         try {
-            File file = new File("datenbank.db");
+            File file = new File("data/datenbank.db");
+
+            System.out.println(file.getAbsolutePath());
             if (!file.exists()){
                 file.createNewFile();
             }
@@ -55,13 +57,26 @@ public class LiteSQL {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-
         return null;
     }
 
+    public static ResultSet executeQuery(PreparedStatement stmt) {
+        try {
+            return stmt.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-
+    public static PreparedStatement  prepareStatement(String query){
+        try {
+            return connection.prepareStatement(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
 }
 

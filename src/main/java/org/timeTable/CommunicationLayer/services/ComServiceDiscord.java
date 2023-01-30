@@ -1,5 +1,6 @@
 package org.timeTable.CommunicationLayer.services;
 
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -8,10 +9,12 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -19,12 +22,17 @@ import org.timeTable.CommunicationLayer.CommunicationLayer;
 import org.timeTable.CommunicationLayer.CommunicationService;
 import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
 import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
+import org.timeTable.CommunicationLayer.exceptions.subscriptionAlreadyExists;
+import org.timeTable.Config;
 import org.timeTable.LiteSQL;
 import org.timeTable.models.Course;
+import org.timeTable.models.Lesson;
 
+import java.awt.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ComServiceDiscord extends CommunicationService{
 
@@ -35,9 +43,9 @@ public class ComServiceDiscord extends CommunicationService{
     public ComServiceDiscord(CommunicationLayer communicationLayer) {
         super(communicationLayer);
 
-        JDABuilder builder = JDABuilder.createDefault("MTA1NTA4NjAwNzY2NzY1ODc3Mg.GEsKOF.pKZDslT3NDXzutL-oqDWVwB-GcEok5WZnFt1aY");
+        JDABuilder builder = JDABuilder.createDefault(Config.token);
 
-        SlashCommandListener listener = new SlashCommandListener();
+        ActionListener listener = new ActionListener();
         builder
                 .setAutoReconnect(true)
                 .enableIntents(
@@ -57,52 +65,77 @@ public class ComServiceDiscord extends CommunicationService{
     }
 
     @Override
-    public void sendTimetableNews(int subscription_id, ArrayList<Course> courses) {
-
-        ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 WHERE subscription_id = " + subscription_id);
+    protected void sendTimetableNews(int subscription_id, ArrayList<Course> courses) {
+        ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 INNER JOIN student ON comService_0.student_id = student.id WHERE subscription_id = " + subscription_id);
         if (set == null) return;
-        Long user_id = null;
-        Long channel_id = null;
-        String channel_type = null;
+        long user_id;
+        long channel_id;
+        String channel_type = "";
+        String prename = null;
+        String surname = null;
 
         try {
             user_id = set.getLong("user_id");
-            channel_id = set.getLong("user_id");
+            channel_id = set.getLong("channel_id");
             channel_type = set.getString("channel_type");
+            prename = set.getString("prename");
+            surname = set.getString("surname");
+            set.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
         MessageChannel channel = null;
-        User user = jda.getUserById(user_id);
+
         if (channel_type.equals("text")){
             channel = jda.getTextChannelById(channel_id);
         } else if (channel_type.equals("private")){
             channel = jda.getPrivateChannelById(channel_id);
+        } else {
+            throw new RuntimeException("Unknown channel type");
         }
-        channel.sendMessage("Your timetable has changed!").queue();
 
+        EmbedBuilder builder = new EmbedBuilder();
 
+        builder
+                .setTitle("Your timetable for " + courses.get(0).getLessons().get(0).getDay())
+                .setAuthor(prename + " " + surname)
+                .setColor(new Color(9565856))
+                .setFooter("Made with love by Julian Thanner", "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Heart_coraz%C3%B3n.svg/1200px-Heart_coraz%C3%B3n.svg.png");
 
+        courses.sort((o1, o2) -> {
+            Lesson lesson1 = o1.getLessons().get(0);
+            Lesson lesson2 = o2.getLessons().get(0);
+            return Integer.compare(lesson1.getStartTime(), lesson2.getStartTime());
+        });
+
+        for (Course course : courses) {
+            builder.addField("Course: " + course.getName(), course.getShortSubject(), false);
+            List<Lesson> lessonList = course.getLessons();
+            for (Lesson lesson : lessonList) {
+                builder.addField(lesson.getStartTime() + " - " + lesson.getEndTime(), lesson.getCellstate(), true);
+            }
+
+        }
+        channel.sendMessageEmbeds(builder.build()).queue();
     }
 
-    private void subscribeTimetable(int student_id, Long userID, Long channelID, String channel_type){
+    private void unsubscribeTimetable(Long userID, Long channelID, String channel_type) {
+
+        ResultSet set = LiteSQL.onQuery("SELECT subscription_id FROM comService_0 WHERE user_id = " + userID + " AND channel_id = " + channelID + " AND channel_type = '" + channel_type + "'");
 
         try {
-            //Add null statement
-            ResultSet set = LiteSQL.onQuery("INSERT INTO subscriptions (student_id, type_id, update_rate, update_time) " +
-                    "VALUES (0, 0, 'daily', 800) RETURNING subscription_id");
-            int id = set.getInt("subscription_id");
+            if (!set.next()){
 
-            LiteSQL.onUpdate("INSERT INTO comService_0 (subscription_id, student_id, user_id, channel_id, channel_type) " +
-                    "VALUES (" + id +", " + student_id +", "+ userID +", "+ channelID + ", '" + channel_type + "')");
+                return;
+            }
+            super.unsubscribeTimetable(set.getInt("subscription_id"), 0);
             set.close();
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
-        //getCommunicationLayer().subscribeTimtableNews();
     }
 
     @Override
@@ -110,7 +143,7 @@ public class ComServiceDiscord extends CommunicationService{
         jda.shutdown();
     }
 
-    class SlashCommandListener extends ListenerAdapter {
+    class ActionListener extends ListenerAdapter {
 
         @Override
         public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -122,60 +155,136 @@ public class ComServiceDiscord extends CommunicationService{
 
             event.deferReply().queue();
             InteractionHook hook = event.getHook();
-            
+
 
             switch (event.getName()) {
                 case "subscribetimetable":{
-                    String channel_type;
-                    ChannelType cType = event.getChannel().getType();
+                    subscribeTimetable(event);
+                } break;
+                case "unsubscribetimetable":{
 
-                    switch (cType){
-                        case TEXT -> channel_type = "text";
-                        case PRIVATE -> channel_type = "private";
-                        default -> channel_type = "unknown";
-                    }
-
-                    MessageChannel channel = event.getChannel();
-
-                    int id = -1;
-
-                    String prename = "";
-                    String surname = "";
-
-                    try {
-                        prename = event.getOption("prename").getAsString();
-                    } catch (NullPointerException ignored) {}
-
-                    try {
-                        surname = event.getOption("surname").getAsString();
-                    } catch (NullPointerException ignored) {}
-
-
-                    try {
-                         id = getCommunicationLayer().getStudentIdByName(prename, surname);
-                    } catch (noStudentFoundException e) {
-                        hook.sendMessage("No student found with this name").queue();
-                        return;
-                    } catch (moreThenOneStudentFoundException e) {
-                        hook.sendMessage("More then one student found with this name").queue();
-                        return;
-                    }
-
-                    subscribeTimetable(id, user.getIdLong(), event.getChannel().getIdLong(), channel_type);
-                    hook.sendMessage("You have successfully subscribed to your timetable").queue();
-                };
-                case "unsubscribetimetable":;
+                    unsubscribeTimetable(event);
+                } break;
                 case "getsubscriptions":;
             }
         }
+        private void subscribeTimetable(SlashCommandInteractionEvent event){
+            InteractionHook hook = event.getHook();
+            User user = event.getUser();
+
+            String channel_type;
+            ChannelType cType = event.getChannel().getType();
+
+            switch (cType){
+                case TEXT -> channel_type = "text";
+                case PRIVATE -> channel_type = "private";
+                default -> channel_type = "unknown";
+            }
+
+            int id = -1;
+
+            String prename = "";
+            String surname = "";
+            int updateTime = 730;
+
+            try {
+                prename = event.getOption("prename").getAsString();
+                surname = event.getOption("surname").getAsString();
+                updateTime = event.getOption("updatetime").getAsInt();
+
+            } catch (NullPointerException ignored) {}
+
+            try {
+                id = getCommunicationLayer().getStudentIdByName(prename, surname);
+            } catch (noStudentFoundException e) {
+                hook.sendMessage("No student found with this name").queue();
+                return;
+            } catch (moreThenOneStudentFoundException e) {
+                hook.sendMessage("More then one student found with this name").queue();
+                return;
+            }
+            int subscription_id = -1;
+            try {
+                subscription_id = ComServiceDiscord.this.subscribeTimetable(id, user.getIdLong(), event.getChannel().getIdLong(), channel_type, updateTime, 0);
+
+            } catch (subscriptionAlreadyExists e) {
+                hook.sendMessage("You are already subscribed to the timetable of this student on this channel").queue();
+                return;
+            }
+            hook.sendMessage("You have successfully subscribed to your timetable, but you need verification by the Owner").queue();
+            String finalPrename = prename;
+            String finalSurname = surname;
+            int finalSubscription_id = subscription_id;
+            jda.getUserById(Config.ownerId).openPrivateChannel().queue((pChannel) ->
+            {
+                pChannel.sendMessage("Please Verify request from User: " + event.getUser().getAsMention() + " for the Timetable for " + finalPrename + " " + finalSurname)
+                        .addActionRow(Button.success("verify_accept_" + finalSubscription_id, "Accept"), Button.danger("verify_deny_" + finalSubscription_id,"Deny"))
+                        .queue();
+            });
+
+
+        }
+        private void unsubscribeTimetable(SlashCommandInteractionEvent event){
+            String channel_type;
+            InteractionHook hook = event.getHook();
+            User user = event.getUser();
+
+            ChannelType cType = event.getChannel().getType();
+
+            switch (cType){
+                case TEXT -> channel_type = "text";
+                case PRIVATE -> channel_type = "private";
+                default -> channel_type = "unknown";
+            }
+            ComServiceDiscord.this.unsubscribeTimetable(user.getIdLong(), event.getChannel().getIdLong(), channel_type);
+            hook.sendMessage("You have successfully unsubscribed from your timetable").queue();
+        }
+
         public void createSlashCommands (){
 
             jda.updateCommands().addCommands(
                     Commands.slash("subscribetimetable", "Subscribe to your own timetable")
                             .addOption(OptionType.STRING,"prename","Set the prename to search for")
                             .addOption(OptionType.STRING, "surname", "Set the surname to search for")
+                            .addOption(OptionType.INTEGER, "updatetime", "Set the time you want your timetable to be sent to you in the format HHmm"),
+                    Commands.slash("unsubscribetimetable", "Unsubscribe to your subscribed timetable")
             ).queue();
+        }
 
+        @Override
+        public void onButtonInteraction (ButtonInteractionEvent event){
+            String eventID = event.getComponentId();
+            String action = eventID.substring(0, eventID.lastIndexOf("_"));
+            String id = eventID.substring(eventID.lastIndexOf("_")+1);
+
+
+            switch (action){
+                case "verify_accept": {
+                    LiteSQL.onUpdate("UPDATE subscriptions SET verified = 1 WHERE subscription_id = " + id);
+                    event.reply("Successfully verified!").queue();
+                    break;
+                }
+                case "verify_deny": {
+                    ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 WHERE subscription_id = " + id);
+                    try {
+                        set.next();
+                        Long userID = set.getLong("user_id");
+                        Long channelID = set.getLong("channel_id");
+                        String channel_type = set.getString("channel_type");
+                        ComServiceDiscord.this.unsubscribeTimetable(userID, channelID, channel_type);
+                        jda.getUserById(userID).openPrivateChannel().queue((pChannel) ->
+                        {
+                            pChannel.sendMessage("Sorry, but the owner couldn't accept your request")
+                                    .queue();
+                        });
+                        event.reply("You successfully denied the request from the user").queue();
+
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                }
+            }
         }
     }
 }

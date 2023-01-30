@@ -1,6 +1,4 @@
 package org.timeTable;
-import org.apache.logging.slf4j.SLF4JLogger;
-import org.springframework.boot.logging.Slf4JLoggingSystem;
 import org.timeTable.CommunicationLayer.CommunicationLayer;
 import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
 import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
@@ -19,12 +17,9 @@ public class Main {
     public LiteSQL liteSQL;
 
     public static void main(String[] args) throws IOException, InterruptedException {
+        Config.loadConfig();
         LiteSQL.connect();
-
-
         
-
-
         TimeTableScrapper timeTableScrapper = new TimeTableScrapper();
 
         CommunicationLayer communicationLayer = new CommunicationLayer(timeTableScrapper);

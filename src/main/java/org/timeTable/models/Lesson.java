@@ -11,27 +11,26 @@ public class Lesson {
     private int day;
     private int hour;
 
+    private int startTime;
+    private int endTime;
     private String cellstate;
-
-
-    public Lesson(String room, int day, int hour) {
-        this.room = room;
-        this.day = day;
-        this.hour = hour;
-
-    }
 
     public Lesson(int day, int hour) {
         this.day = day;
         this.hour = hour;
 
     }
-    public Lesson(Course course, int day, int hour, String cellstate) {
+    public Lesson(Course course, int day, int hour, String cellstate, int startTime, int endTime) {
         this.day = day;
         this.hour = hour;
         this.cellstate = cellstate;
         this.course = course;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
 
+    public void setCourse(Course course) {
+        this.course = course;
     }
 
     public Course getCourse() {
@@ -56,6 +55,14 @@ public class Lesson {
 
     public String getCellstate() {
         return cellstate;
+    }
+
+    public int getStartTime() {
+        return startTime;
+    }
+
+    public int getEndTime() {
+        return endTime;
     }
 
     public static int getLessonHour(int startTime) {

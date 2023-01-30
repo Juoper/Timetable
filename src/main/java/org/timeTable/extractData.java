@@ -107,7 +107,7 @@ public class extractData {
                     teacher = year.addTeacher(teacher);
 
                     Course course = new Course(teacher, split[0], split[1]);
-
+                    lesson.setCourse(course);
 
                     lesson = year.addLesson(lesson);
                     course = year.addCourse(course);
@@ -125,6 +125,8 @@ public class extractData {
                     Lesson lesson = new Lesson(x, y);
 
                     Course course = new Course(teacher, split[0], "free");
+                    lesson.setCourse(course);
+
                     lesson = year.addLesson(lesson);
                     course = year.addCourse(course);
 
@@ -203,8 +205,10 @@ public class extractData {
 
 
     public void save() throws IOException {
-        Database.createTables();
+        //Database.createTables();
         Year year = extractData.extractFromPdf("Stundenplan.pdf");        //Julian_Stundenplan.pdf, JC_Stundenplan.pdf
+
+
         LiteSQL.onUpdate("DELETE FROM course");
         LiteSQL.onUpdate("DELETE FROM sqlite_sequence WHERE name='course'");
         LiteSQL.onUpdate("DELETE FROM teacher");

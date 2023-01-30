@@ -1,37 +1,45 @@
 package org.timeTable.TimeTableScraper;
 
 import com.google.gson.*;
-import org.springframework.cglib.core.Local;
 import org.timeTable.models.*;
-import org.timeTable.models.json.Element;
-import org.timeTable.models.json.ElementPeriod;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Map;
-import java.util.Stack;
+import java.util.concurrent.TimeUnit;
 
 public class TimeTableScrapper {
 
     private ArrayList<Course> courses;
-
     private ArrayList<Lesson> lessons;
-    public TimeTableScrapper() throws IOException, InterruptedException {
+    private WebScraper webScraper;
+    private long lastFetch = 0;
+    private LocalDate lastRequestDate;
+
+    public TimeTableScrapper() throws InterruptedException, IOException {
 
         //wrap everything so it pulls the timetable regularly and not only at the creation of the object
-        WebScraper wS = new WebScraper();
-        LocalDate date = LocalDate.now();
-        File file = new File("example.json");
-        String timeTable = Files.readString(Path.of(file.toURI())); //wS.getTimetable(date);
-        
+        webScraper = new WebScraper();
+    }
+
+    private void fetchData(LocalDate date) {
+
+
+        if (lastRequestDate != null && lastRequestDate.equals(date)){
+            if (System.currentTimeMillis() <= lastFetch + TimeUnit.MINUTES.toMillis(30)){
+                return;
+            }
+        }
+
+        lastFetch = System.currentTimeMillis();
+
+        String timeTable = null;
+        try {
+            timeTable = webScraper.getTimetable(date);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
 
         //System.out.println(timeTable);
         JsonElement jelement = JsonParser.parseString(timeTable);
@@ -46,14 +54,13 @@ public class TimeTableScrapper {
 
         //Parse the courses and lessons
         parseCourses(jarrayCourses);
-        parseLessons(jarrayLessons);
-        
+        parseLessons(jarrayLessons, date);
     }
 
-    private void parseLessons(JsonArray jarrayPeriod){
+    private void parseLessons(JsonArray jarrayPeriod, LocalDate date) {
         Gson gson = new Gson();
         GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(LessonResponse.class, new LessonResponseDeserializer(courses));
+        gsonBuilder.registerTypeAdapter(LessonResponse.class, new LessonResponseDeserializer(courses, date));
         gson = gsonBuilder.create();
         LessonResponse lessonResponse = gson.fromJson(jarrayPeriod, LessonResponse.class);
 
@@ -70,27 +77,14 @@ public class TimeTableScrapper {
     }
 
     public ArrayList<Lesson> getLessons(){
+        fetchData(LocalDate.now());
         return lessons;
     }
-    public ArrayList<Course> getCourses(){
+    public ArrayList<Course> getCourses(LocalDate date){
+        fetchData(date);
         return courses;
     }
 
 
-    public static String getParamsString(Map<String, String> params)
-            throws UnsupportedEncodingException {
-        StringBuilder result = new StringBuilder();
 
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            result.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8));
-            result.append("=");
-            result.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
-            result.append("&");
-        }
-
-        String resultString = result.toString();
-        return resultString.length() > 0
-                ? resultString.substring(0, resultString.length() - 1)
-                : resultString;
-    }
 }

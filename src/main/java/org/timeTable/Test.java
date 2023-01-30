@@ -1,28 +1,16 @@
 package org.timeTable;
 
-import org.timeTable.models.Lesson;
-import org.timeTable.models.Year;
+import org.timeTable.CommunicationLayer.CommunicationLayer;
+import org.timeTable.CommunicationLayer.CommunicationService;
+import org.timeTable.CommunicationLayer.services.ComServiceDiscord;
+import org.timeTable.TimeTableScraper.TimeTableScrapper;
 
 import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Test {
-    public static void main(String[] args) throws IOException {
-        LiteSQL.connect();
+    public static void main(String[] args) throws IOException, InterruptedException {
+        
 
-        ResultSet set = LiteSQL.onQuery("SELECT name, COUNT(*) c from course GROUP BY name HAVING COUNT(*) > 1");
-
-        try {
-            while (set.next()) {
-                System.out.println(set.getString("name") + " " + set.getString("c"));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-
-        }
 
     }
 
