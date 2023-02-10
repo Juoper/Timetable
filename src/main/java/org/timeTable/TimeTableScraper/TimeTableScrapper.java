@@ -5,8 +5,11 @@ import org.timeTable.models.*;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+
+import static org.timeTable.Main.zoneID;
 
 public class TimeTableScrapper {
 
@@ -22,7 +25,7 @@ public class TimeTableScrapper {
         webScraper = new WebScraper();
     }
 
-    private void fetchData(LocalDate date) {
+    private void fetchData(ZonedDateTime date) {
 
 
         if (lastRequestDate != null && lastRequestDate.equals(date)){
@@ -40,8 +43,6 @@ public class TimeTableScrapper {
             throw new RuntimeException(e);
         }
 
-
-        //System.out.println(timeTable);
         JsonElement jelement = JsonParser.parseString(timeTable);
 
         JsonObject jobject = jelement.getAsJsonObject();
@@ -57,7 +58,7 @@ public class TimeTableScrapper {
         parseLessons(jarrayLessons, date);
     }
 
-    private void parseLessons(JsonArray jarrayPeriod, LocalDate date) {
+    private void parseLessons(JsonArray jarrayPeriod, ZonedDateTime date) {
         Gson gson = new Gson();
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(LessonResponse.class, new LessonResponseDeserializer(courses, date));
@@ -77,10 +78,10 @@ public class TimeTableScrapper {
     }
 
     public ArrayList<Lesson> getLessons(){
-        fetchData(LocalDate.now());
+        fetchData(ZonedDateTime.now(zoneID));
         return lessons;
     }
-    public ArrayList<Course> getCourses(LocalDate date){
+    public ArrayList<Course> getCourses(ZonedDateTime date){
         fetchData(date);
         return courses;
     }

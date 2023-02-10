@@ -8,6 +8,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class WebScraper {
 
     }
 
-    public String getTimetable(LocalDate date) throws IOException, InterruptedException {
+    public String getTimetable(ZonedDateTime date) throws IOException, InterruptedException {
 
         //https://nessa.webuntis.com/WebUntis/api/public/timetable/weekly/data?elementType=1&elementId=1052&date=
         List<HttpCookie> cookieList = cm.getCookieStore().getCookies();

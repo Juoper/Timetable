@@ -4,6 +4,7 @@ import com.google.gson.*;
 
 import java.lang.reflect.Type;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
@@ -12,9 +13,9 @@ import static org.timeTable.models.Lesson.getLessonHour;
 public class LessonResponseDeserializer implements JsonDeserializer<LessonResponse> {
 
     private final ArrayList<Course> courses;
-    private final LocalDate date;
+    private final ZonedDateTime date;
 
-    public LessonResponseDeserializer(ArrayList<Course> courses, LocalDate date) {
+    public LessonResponseDeserializer(ArrayList<Course> courses, ZonedDateTime date) {
         this.courses = courses;
         this.date = date;
     }
