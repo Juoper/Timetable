@@ -29,7 +29,7 @@ public abstract class CommunicationService {
 
     protected abstract void sendTimetableNews(int subscription_id, ArrayList<Course> courses);
 
-    protected int subscribeTimetable(int student_id, Long userID, Long channelID, String channel_type, int updateTime, int comServiceID) throws subscriptionAlreadyExists {
+    protected int subscribeTimetable(int studentId, int updateTime) throws subscriptionAlreadyExists {
 
         int hour = updateTime / 100;
         int offsetDays = 0;
@@ -38,42 +38,22 @@ public abstract class CommunicationService {
         }
 
         try {
-
-            ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_" + comServiceID + " WHERE student_id = " + student_id + " AND channel_id = " + channelID);
-
-            if (set.next()) {
-                set.close();
-                throw new subscriptionAlreadyExists("You are already subscribed to this timetable");
-            }
-
-            //Add null statement
-
-
             PreparedStatement stmt = LiteSQL.prepareStatement("INSERT INTO subscriptions (student_id, type_id, update_rate, update_time, offsetDays) " +
                     "VALUES (?, 0, 'daily', ?, ?) RETURNING subscription_id");
-
-            stmt.setString(1, String.valueOf(student_id));
+            stmt.setString(1, String.valueOf(studentId));
             stmt.setString(2, String.valueOf(updateTime));
             stmt.setString(3, String.valueOf(offsetDays));
 
-            set = LiteSQL.executeQuery(stmt);
+            ResultSet set = LiteSQL.executeQuery(stmt);
 
-            //set = LiteSQL.onQuery("INSERT INTO subscriptions (student_id, type_id, update_rate, update_time, offsetDays) " +
-            //        "VALUES (" + student_id + ", 0, 'daily', " + updateTime + ", 1) RETURNING subscription_id");
 
             int subscription_id = set.getInt("subscription_id");
-
             set.close();
-            //move to ComServiceDiscord
-            LiteSQL.onUpdate("INSERT INTO comService_" + comServiceID + " (subscription_id, student_id, user_id, channel_id, channel_type) " +
-                    "VALUES (" + subscription_id + ", " + student_id + ", " + userID + ", " + channelID + ", '" + channel_type + "')");
 
-            //communicationLayer.newTimer(subscription_id, hour, minute, 1);
             return subscription_id;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     protected void unsubscribeTimetable(int subscription_id, int comServiceID) {

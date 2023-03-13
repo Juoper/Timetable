@@ -9,6 +9,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ public class WebScraper {
 
     public String getTimetable(ZonedDateTime date) throws IOException, InterruptedException {
 
+        getBearerToken();
         //https://nessa.webuntis.com/WebUntis/api/public/timetable/weekly/data?elementType=1&elementId=1052&date=
         List<HttpCookie> cookieList = cm.getCookieStore().getCookies();
 
@@ -48,12 +50,11 @@ public class WebScraper {
         Map<String, String> parameters = new HashMap<>();
         parameters.put("elementType", "1");
         parameters.put("elementId", "1052");
-        parameters.put("date", date.toString());                          //LocalDate.now().toString()
+        parameters.put("date", DateTimeFormatter.ofPattern("yyyy-MM-dd").format(date));                          //LocalDate.now().toString()
 
         String params = getParamsString(parameters);
 
         String requestUrl = "https://nessa.webuntis.com/WebUntis/api/public/timetable/weekly/data?" + params;
-
         var request = HttpRequest.newBuilder(
                         URI.create(requestUrl))
                 .header("accept", "*/*")
@@ -108,8 +109,7 @@ public class WebScraper {
         String bearerToken = response.body();
     }
 
-    public static String getParamsString(Map<String, String> params)
-            throws UnsupportedEncodingException {
+    public static String getParamsString(Map<String, String> params) throws UnsupportedEncodingException {
         StringBuilder result = new StringBuilder();
 
         for (Map.Entry<String, String> entry : params.entrySet()) {

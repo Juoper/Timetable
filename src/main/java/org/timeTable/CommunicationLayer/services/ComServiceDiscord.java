@@ -34,15 +34,13 @@ import org.timeTable.models.Lesson;
 import java.awt.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ComServiceDiscord extends CommunicationService {
 
     private final JDA jda;
+    private static List<Long> verifiedUsers;
 
     //type ID: 0
 
@@ -66,12 +64,12 @@ public class ComServiceDiscord extends CommunicationService {
         builder.setActivity(Activity.playing("Scraping your data"));
 
         jda = builder.build();
+        verifiedUsers = new ArrayList<>();
         listener.createSlashCommands();
         System.out.println("Bot online");
     }
 
-    @Override
-    protected void sendTimetableNews(int subscription_id, ArrayList<Course> courses) {
+    public void sendTimetableNews(int subscription_id, ArrayList<Course> courses) {
         ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 INNER JOIN student ON comService_0.student_id = student.id WHERE subscription_id = " + subscription_id);
         if (set == null) return;
         long user_id;
@@ -91,6 +89,10 @@ public class ComServiceDiscord extends CommunicationService {
             throw new RuntimeException(e);
         }
 
+        sendTimetableNews(user_id, channel_id, channel_type, prename, surname, courses);
+    }
+
+    private void sendTimetableNews(long user_id, long channel_id, String channel_type, String prename , String surname, ArrayList<Course> courses) {
         MessageChannel channel = null;
         if (channel_type.equals("text")) {
             channel = jda.getTextChannelById(channel_id);
@@ -125,9 +127,9 @@ public class ComServiceDiscord extends CommunicationService {
         channel.sendMessageEmbeds(builder.build()).queue();
     }
 
-    private void unsubscribeTimetable(Long userID, Long channelID, String channel_type) {
+    private void unsubscribeTimetable(Long userID, Long channelID, String channel_type, int subscription_id) {
 
-        ResultSet set = LiteSQL.onQuery("SELECT subscription_id FROM comService_0 WHERE user_id = " + userID + " AND channel_id = " + channelID + " AND channel_type = '" + channel_type + "'");
+        ResultSet set = LiteSQL.onQuery("SELECT subscription_id FROM comService_0 WHERE user_id = " + userID + " AND channel_id = " + channelID + " AND channel_type = '" + channel_type + "' AND subscription_id = " + subscription_id);
 
         try {
             if (!set.next()) {
@@ -173,10 +175,12 @@ public class ComServiceDiscord extends CommunicationService {
                 }
                 break;
                 case "getsubscriptions":
-                    ;
+                    break;
 
                 case "getcurrenttimetable": {
+
                     sendCurrentTimetable(event);
+                    break;
                 }
             }
         }
@@ -198,10 +202,10 @@ public class ComServiceDiscord extends CommunicationService {
             String surname = Objects.requireNonNullElse(event.getOption("surname", OptionMapping::getAsString), "");
             int updateTime = Objects.requireNonNullElse(event.getOption("updatetime", OptionMapping::getAsInt), 730);
 
-            int id;
+            int studentID;
 
             try {
-                id = getCommunicationLayer().getStudentIdByName(prename, surname);
+                studentID = getCommunicationLayer().getStudentIdByName(prename, surname);
             } catch (noStudentFoundException e) {
                 hook.sendMessage("No student found with this name").queue();
                 return;
@@ -209,25 +213,60 @@ public class ComServiceDiscord extends CommunicationService {
                 hook.sendMessage("More then one student found with this name").queue();
                 return;
             }
-            int subscription_id = -1;
-            try {
-                subscription_id = ComServiceDiscord.this.subscribeTimetable(id, user.getIdLong(), event.getChannel().getIdLong(), channel_type, updateTime, 0);
 
+
+            int subscriptionID;
+            try {
+
+                ResultSet set = LiteSQL.onQuery("SELECT comService_0.subscription_id FROM comService_0 INNER JOIN subscriptions ON comService_0.subscription_id = subscriptions.subscription_id WHERE subscriptions.student_id = " + studentID + " AND channel_id = " + event.getChannel().getIdLong() + " AND update_time = " + updateTime);
+
+                if (set.next()) {
+                    set.close();
+                    throw new subscriptionAlreadyExists("You are already subscribed to this timetable");
+                }
+                subscriptionID = ComServiceDiscord.this.subscribeTimetable(studentID, updateTime);
+
+                LiteSQL.onUpdate("INSERT INTO comService_0 (subscription_id, student_id, user_id, channel_id, channel_type) " +
+                        "VALUES (" + subscriptionID + ", " + studentID + ", " + user.getIdLong() + ", " + event.getChannel().getIdLong() + ", '" + channel_type + "')");
+            } catch (SQLException ignored) {
+                hook.sendMessage("An Error occurred. Please contact " + jda.getUserById(Config.ownerId).getAsMention()).queue();
+                return;
             } catch (subscriptionAlreadyExists e) {
                 hook.sendMessage("You are already subscribed to the timetable of this student on this channel").queue();
                 return;
             }
+
             hook.sendMessage("You have successfully subscribed to your timetable, but you need verification by the Owner").queue();
-            int finalSubscription_id = subscription_id;
-            jda.getUserById(Config.ownerId).openPrivateChannel().queue((pChannel) ->
-            {
-                pChannel.sendMessage("Please Verify request from User: " + event.getUser().getAsMention() + " for the Timetable for " + prename + " " + surname)
-                        .addActionRow(Button.success("verify_accept_" + finalSubscription_id, "Accept"), Button.danger("verify_deny_" + finalSubscription_id, "Deny"))
-                        .queue();
-            });
+
+            if (!isVerified(user.getIdLong())) {
+                sendVerificationMessage(user, prename + " " + "surname", "subverify", subscriptionID);
+            }
+
+        }
+
+        private boolean isVerified(long userId) {
+
+            if (Objects.equals(Config.ownerId, userId + "")) {
+                return true;
+            }
+            if (verifiedUsers.contains(userId)) {
+                return true;
+            }
+            ResultSet set = LiteSQL.onQuery("SELECT user_verified FROM comService_0 WHERE user_id = " + userId);
+            try {
+                if (set.next()) {
+                    return set.getBoolean("verified");
+                }
+                set.close();
+                return false;
+            } catch (SQLException e) {
+                return false;
+            }
         }
 
         private void unsubscribeTimetable(SlashCommandInteractionEvent event) {
+
+            //TODO use specified subscription
             String channel_type;
             InteractionHook hook = event.getHook();
             User user = event.getUser();
@@ -239,22 +278,31 @@ public class ComServiceDiscord extends CommunicationService {
                 case PRIVATE -> channel_type = "private";
                 default -> channel_type = "unknown";
             }
-            ComServiceDiscord.this.unsubscribeTimetable(user.getIdLong(), event.getChannel().getIdLong(), channel_type);
+            int subscription_id = event.getOption("subscription").getAsInt();
+            ComServiceDiscord.this.unsubscribeTimetable(user.getIdLong(), event.getChannel().getIdLong(), channel_type, subscription_id);
             hook.sendMessage("You have successfully unsubscribed from your timetable").queue();
         }
 
         private void sendCurrentTimetable(SlashCommandInteractionEvent event) {
             InteractionHook hook = event.getHook();
-
-            String prename = "";
-            String surname = "";
+            User user = event.getUser();
+            String prename;
+            String surname;
+            int offsetdays;
             try {
                 prename = event.getOption("prename").getAsString();
             } catch (NullPointerException ignored) {
+                prename = "";
             }
             try {
                 surname = event.getOption("surname").getAsString();
             } catch (NullPointerException ignored) {
+                surname = "";
+            }
+            try {
+                offsetdays = event.getOption("offsetdays").getAsInt();
+            } catch (NullPointerException ignored) {
+                offsetdays = 0;
             }
 
             int id = -1;
@@ -267,8 +315,32 @@ public class ComServiceDiscord extends CommunicationService {
                 hook.sendMessage("More then one student found with this name").queue();
                 return;
             }
-            getCommunicationLayer().sendTimetableNews(id);
 
+            if (!isVerified(user.getIdLong())) {
+                sendVerificationMessage(user, prename + " " + "surname", "getverify", user.getIdLong());
+                hook.sendMessage("You need to be verified by the owner to use this command. Please Try again later").queue();
+                return;
+            }
+
+            ArrayList<Course> courses = getCommunicationLayer().getCourseDataOfStudent(id, offsetdays);
+            String channel_type;
+            switch (event.getChannel().getType()) {
+                case TEXT -> channel_type = "text";
+                case PRIVATE -> channel_type = "private";
+                default -> channel_type = "unknown";
+            }
+
+            sendTimetableNews(user.getIdLong(), event.getChannel().getIdLong(), channel_type, prename, surname, courses);
+        }
+
+        private void sendVerificationMessage(User user, String name, String buttonPreFix, long buttonId) {
+
+            jda.getUserById(Config.ownerId).openPrivateChannel().queue((pChannel) ->
+            {
+                pChannel.sendMessage("Please Verify request from User: " + user.getAsMention() + " for the Timetable for " + name)
+                        .addActionRow(Button.success(buttonPreFix + "_accept_" + buttonId, "Accept"), Button.danger(buttonPreFix + "_deny_" + buttonId, "Deny"))
+                        .queue();
+            });
         }
 
         public void createSlashCommands() {
@@ -279,49 +351,90 @@ public class ComServiceDiscord extends CommunicationService {
                             .addOption(OptionType.INTEGER, "updatetime", "Set the time you want your timetable to be sent to you in the format HHmm"),
                     Commands.slash("unsubscribetimetable", "Unsubscribe to your subscribed timetable")
                             .addOption(OptionType.STRING, "subscription", "Select the subscription to unsubscribe from", true, true)
-                    //,Commands.slash("getcurrenttimetable","Get your current Timetable")
+
+                    , Commands.slash("getcurrenttimetable", "Get your current Timetable for your subscribed students")
+                            .addOption(OptionType.STRING, "prename", "Set the prename to search for")
+                            .addOption(OptionType.STRING, "surname", "Set the surname to search for")
+                            .addOption(OptionType.INTEGER, "offsetdays", "set how many days from today you want your timetable to be offset")
+
             ).queue();
         }
 
         @Override
         public void onButtonInteraction(ButtonInteractionEvent event) {
             String eventID = event.getComponentId();
-            String action = eventID.substring(0, eventID.lastIndexOf("_"));
-            String subscription_id = eventID.substring(eventID.lastIndexOf("_") + 1);
+            String[] args = eventID.split("_");
 
-            switch (action) {
-                case "verify_accept" -> {
-                    verifyTimetable(Integer.parseInt(subscription_id));
-                    event.reply("Successfully verified!").queue();
-                    event.getMessage().delete().queue();
+            switch (args[0]) {
+                case "getverify" -> {
+                    switch (args[1]) {
+                        case "accept" -> {
+                            System.out.println(Arrays.toString(args));
+                            verifiedUsers.add(Long.valueOf(args[2]));
+                            event.reply("Successfully verified!").queue();
+                            event.getMessage().delete().queue();
+                        }
+                        case "deny" -> {
+                            event.reply("Successfully denied!").queue();
+                            event.getMessage().delete().queue();
+                        }
+                    }
                 }
-                case "verify_deny" -> {
-                    ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 WHERE subscription_id = " + subscription_id);
-                    try {
-                        set.next();
-                        long userID = set.getLong("user_id");
-                        long channelID = set.getLong("channel_id");
-                        String channel_type = set.getString("channel_type");
-                        ComServiceDiscord.this.unsubscribeTimetable(userID, channelID, channel_type);
+                case "subverify" -> {
+                    switch (args[1]) {
+                        case "accept" -> {
+                            verifyTimetable(Integer.parseInt(args[2]));
+                            event.reply("Successfully verified!").queue();
+                            event.getMessage().delete().queue();
+                        }
+                        case "deny" -> {
+                            ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 WHERE subscription_id = " + args[2]);
+                            try {
+                                set.next();
+                                long userID = set.getLong("user_id");
+                                long channelID = set.getLong("channel_id");
+                                String channel_type = set.getString("channel_type");
+                                ComServiceDiscord.this.unsubscribeTimetable(userID, channelID, channel_type, Integer.parseInt(args[2]));
 
-                        jda.getUserById(userID).openPrivateChannel().queue((pChannel) ->
-                        {
-                            pChannel.sendMessage("Sorry, but the owner couldn't accept your request")
-                                    .queue();
-                        });
-                        event.reply("You successfully denied the request from the user").queue();
+                                jda.getUserById(userID).openPrivateChannel().queue((pChannel) ->
+                                {
+                                    pChannel.sendMessage("Sorry, but the owner couldn't accept your request")
+                                            .queue();
+                                });
+                                event.reply("You successfully denied the request from the user").queue();
 
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                     }
                 }
             }
+
+
         }
 
         @Override
         public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
 
             if (event.getName().equals("unsubscribetimetable") && event.getFocusedOption().getName().equals("subscription")) {
+                long userID = event.getUser().getIdLong();
+
+                List<Command.Choice> options = new ArrayList<>();
+
+                try {
+                    ResultSet set = LiteSQL.onQuery("SELECT prename, surname, update_time, comService_0.subscription_id FROM comService_0 INNER JOIN student ON comService_0.student_id = student.id INNER JOIN subscriptions ON comService_0.subscription_id = subscriptions.subscription_id WHERE user_id = " + userID);
+
+                    while (set.next()) {
+                        options.add(new Command.Choice(set.getString("prename") + " " + set.getString("surname") + ", Update Time: " + set.getInt("update_time"), set.getInt("subscription_id")));
+                    }
+
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                event.replyChoices(options).queue();
+
+            } else if (event.getName().equals("getcurrenttimetable") && event.getFocusedOption().getName().equals("student")) {
                 long userID = event.getUser().getIdLong();
                 ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 INNER JOIN student ON comService_0.student_id = student.id WHERE user_id = " + userID);
 
@@ -332,8 +445,8 @@ public class ComServiceDiscord extends CommunicationService {
                         options.add(new Command.Choice(set.getString("Prename") + " " + set.getString("Surname"), set.getInt("subscription_id")));
                     }
 
-                } catch (SQLException ignored) {}
-
+                } catch (SQLException ignored) {
+                }
                 event.replyChoices(options).queue();
             }
         }

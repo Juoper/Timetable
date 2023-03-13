@@ -76,11 +76,8 @@ public class CommunicationLayer {
     }
     void newTimer (int subscription_id, int hour, int minute, int offsetDays) {
 
-
         ZonedDateTime now = ZonedDateTime.now(zoneID);
         ZonedDateTime nextRun = now.withHour(hour).withMinute(minute).withSecond(0);
-
-
 
         Duration duration = Duration.between(now, nextRun);
         long initialDelay = duration.getSeconds();
@@ -96,6 +93,7 @@ public class CommunicationLayer {
             @Override
             public void run() {
                 try {
+
                     Calendar c = Calendar.getInstance();
                     //if excuted at thursday evening then send the data again at saturday evening
                     if (c.get(Calendar.DAY_OF_WEEK) == 6 - offsetDays){
@@ -135,9 +133,27 @@ public class CommunicationLayer {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        sendTimetableNews(student_id, type_id, offsetDays, subscription_id);
+    }
 
+    public void sendTimetableNews (int student_id, int type_id, int offsetDays, int subscription_id ){
+        ArrayList<Course> studentCourses = getCourseDataOfStudent(student_id, offsetDays);
+
+        CommunicationService comService = null;
+        switch (type_id){
+            case 0:
+                //Discord
+                comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceDiscord).findFirst().get();
+                comService.sendTimetableNews(subscription_id, studentCourses);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public ArrayList<Course> getCourseDataOfStudent(int student_id, int offsetDays){
         ZonedDateTime lDate = ZonedDateTime.now(zoneID).plusDays(offsetDays);
-        
+
         ArrayList<Course> courses = timeTableScrapper.getCourses(lDate);
         ResultSet coursesSet = LiteSQL.onQuery("SELECT * FROM student_course WHERE student_id = " + student_id);
         ArrayList<Course> studentCourses = new ArrayList<>();
@@ -158,19 +174,7 @@ public class CommunicationLayer {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        
-
-        CommunicationService comService = null;
-        switch (type_id){
-            case 0:
-                //Discord
-                comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceDiscord).findFirst().get();
-                comService.sendTimetableNews(subscription_id, studentCourses);
-                break;
-            default:
-                break;
-        }
-
+        return studentCourses;
     }
 
     public int getStudentIdByName(String prename, String surname) throws noStudentFoundException, moreThenOneStudentFoundException {
