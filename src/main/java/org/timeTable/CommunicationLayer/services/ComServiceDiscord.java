@@ -240,6 +240,8 @@ public class ComServiceDiscord extends CommunicationService {
 
             if (!isVerified(user.getIdLong())) {
                 sendVerificationMessage(user, prename + " " + "surname", "subverify", subscriptionID);
+            } else {
+                verifyTimetable(subscriptionID);
             }
 
         }

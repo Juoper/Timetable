@@ -20,7 +20,6 @@ public abstract class CommunicationService {
 
     public CommunicationService(CommunicationLayer communicationLayer) {
         this.communicationLayer = communicationLayer.registerCommunicationService(this);
-
     }
 
     public CommunicationLayer getCommunicationLayer() {
