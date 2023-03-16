@@ -1,5 +1,7 @@
 package org.timeTable.CommunicationLayer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
 import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
 import org.timeTable.CommunicationLayer.services.ComServiceDiscord;
@@ -22,6 +24,8 @@ public class CommunicationLayer {
     private final TimeTableScrapper timeTableScrapper;
 
     private final HashMap<Integer, ScheduledFuture<?>> runnableHashMap;
+
+    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
 
     public CommunicationLayer(TimeTableScrapper timeTableScrapper) {
         this.timeTableScrapper = timeTableScrapper;
@@ -82,8 +86,7 @@ public class CommunicationLayer {
         Duration duration = Duration.between(now, nextRun);
         long initialDelay = duration.getSeconds();
 
-        System.out.println("now: " + now + " nextRun: " + nextRun + " inital Delay: " + initialDelay);
-
+        logger.info("New Timer created for subscription_id: " + subscription_id + " and sending time for " + hour + ":" + minute + " with offset of " + offsetDays + " days");
 
         if (initialDelay < 0 ){
             initialDelay = TimeUnit.HOURS.toSeconds(24) + initialDelay;
@@ -133,6 +136,7 @@ public class CommunicationLayer {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        logger.info("Sending timetable news for subscription_id: " + subscription_id + " student_id: " + student_id + " with offset of " + offsetDays + " days");
         sendTimetableNews(student_id, type_id, offsetDays, subscription_id);
     }
 
@@ -145,6 +149,7 @@ public class CommunicationLayer {
                 //Discord
                 comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceDiscord).findFirst().get();
                 comService.sendTimetableNews(subscription_id, studentCourses);
+
                 break;
             default:
                 break;
@@ -219,7 +224,7 @@ public class CommunicationLayer {
 
 
         ResultSet set = LiteSQL.executeQuery(stmt);
-        int id = 0;
+        int id = -1;
         try {
             if(set != null){
                 if (set.next()){
@@ -235,15 +240,20 @@ public class CommunicationLayer {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        if (id <= 0) throw new noStudentFoundException("Can't find a student matching the given data");
+
         return id;
     }
 
     protected void stopTimer(int subscriptionId) {
+
         ScheduledFuture<?> scheduledFuture = runnableHashMap.get(subscriptionId);
         try {
             scheduledFuture.cancel(false);
-
-        }catch (NullPointerException ignored){}
+            logger.info("Timer for subscription_id: " + subscriptionId + " stopped");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }

@@ -21,6 +21,8 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.timeTable.CommunicationLayer.CommunicationLayer;
 import org.timeTable.CommunicationLayer.CommunicationService;
 import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
@@ -34,6 +36,7 @@ import org.timeTable.models.Lesson;
 import java.awt.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.List;
 
@@ -41,6 +44,7 @@ public class ComServiceDiscord extends CommunicationService {
 
     private final JDA jda;
     private static List<Long> verifiedUsers;
+    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
 
     //type ID: 0
 
@@ -88,6 +92,7 @@ public class ComServiceDiscord extends CommunicationService {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        logger.info("Sending timetable news to " + prename + " " + surname + " with channel type " + channel_type + " and channel id " + channel_id + " and user id " + user_id + " at " + LocalDateTime.now());
 
         sendTimetableNews(user_id, channel_id, channel_type, prename, surname, courses);
     }
@@ -129,6 +134,7 @@ public class ComServiceDiscord extends CommunicationService {
 
     private void unsubscribeTimetable(Long userID, Long channelID, String channel_type, int subscription_id) {
 
+        logger.info("Unsubscribing user " + userID + " from channel " + channelID + " with type " + channel_type + " and subscription id " + subscription_id);
         ResultSet set = LiteSQL.onQuery("SELECT subscription_id FROM comService_0 WHERE user_id = " + userID + " AND channel_id = " + channelID + " AND channel_type = '" + channel_type + "' AND subscription_id = " + subscription_id);
 
         try {
@@ -160,7 +166,7 @@ public class ComServiceDiscord extends CommunicationService {
                 return;
             }
 
-            event.deferReply().queue();
+            event.deferReply(false).queue();
             InteractionHook hook = event.getHook();
 
 
