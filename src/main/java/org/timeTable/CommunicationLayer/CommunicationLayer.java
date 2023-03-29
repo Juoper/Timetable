@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
 import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
 import org.timeTable.CommunicationLayer.services.ComServiceDiscord;
+import org.timeTable.CommunicationLayer.services.ComServiceWhatsApp;
 import org.timeTable.LiteSQL;
 import org.timeTable.TimeTableScraper.TimeTableScrapper;
 import org.timeTable.models.Course;
@@ -37,12 +38,13 @@ public class CommunicationLayer {
         //sendTimetableNews(12);
 
     }
+
     public CommunicationLayer registerCommunicationService(CommunicationService service) {
         comServices.add(service);
         return this;
     }
 
-    private void pullTimers(){
+    private void pullTimers() {
         ResultSet resultSet = LiteSQL.onQuery("SELECT * FROM subscriptions WHERE verified = 1");
 
         try {
@@ -63,7 +65,7 @@ public class CommunicationLayer {
         }
     }
 
-    void newTimer (int subscription_id){
+    void newTimer(int subscription_id) {
         ResultSet set = LiteSQL.onQuery("SELECT * FROM subscriptions WHERE subscription_id = " + subscription_id);
         try {
             int hour = set.getInt("update_time") / 100;
@@ -76,9 +78,9 @@ public class CommunicationLayer {
         }
 
 
-
     }
-    void newTimer (int subscription_id, int hour, int minute, int offsetDays) {
+
+    void newTimer(int subscription_id, int hour, int minute, int offsetDays) {
 
         ZonedDateTime now = ZonedDateTime.now(zoneID);
         ZonedDateTime nextRun = now.withHour(hour).withMinute(minute).withSecond(0);
@@ -88,20 +90,20 @@ public class CommunicationLayer {
 
         logger.info("New Timer created for subscription_id: " + subscription_id + " and sending time for " + hour + ":" + minute + " with offset of " + offsetDays + " days");
 
-        if (initialDelay < 0 ){
+        if (initialDelay < 0) {
             initialDelay = TimeUnit.HOURS.toSeconds(24) + initialDelay;
         }
 
-        Runnable runnable = new Runnable(){
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 try {
 
                     Calendar c = Calendar.getInstance();
                     //if excuted at thursday evening then send the data again at saturday evening
-                    if (c.get(Calendar.DAY_OF_WEEK) == 6 - offsetDays){
+                    if (c.get(Calendar.DAY_OF_WEEK) == 6 - offsetDays) {
                         scheduledExecutorService.schedule(this, 3, TimeUnit.DAYS);
-                    }else {
+                    } else {
                         scheduledExecutorService.schedule(this, 1, TimeUnit.DAYS);
                     }
                     sendTimetableNews(subscription_id);
@@ -119,7 +121,7 @@ public class CommunicationLayer {
 
     //public unsubscribeTimtableNews (Student student)
 
-    public void sendTimetableNews (int subscription_id) {
+    public void sendTimetableNews(int subscription_id) {
         ResultSet set = LiteSQL.onQuery("SELECT * FROM subscriptions WHERE subscription_id = " + subscription_id);
         if (set == null) return;
 
@@ -140,23 +142,28 @@ public class CommunicationLayer {
         sendTimetableNews(student_id, type_id, offsetDays, subscription_id);
     }
 
-    public void sendTimetableNews (int student_id, int type_id, int offsetDays, int subscription_id ){
+    public void sendTimetableNews(int student_id, int type_id, int offsetDays, int subscription_id) {
         ArrayList<Course> studentCourses = getCourseDataOfStudent(student_id, offsetDays);
 
         CommunicationService comService = null;
-        switch (type_id){
+        switch (type_id) {
             case 0:
                 //Discord
                 comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceDiscord).findFirst().get();
                 comService.sendTimetableNews(subscription_id, studentCourses);
-
                 break;
+            case 1:
+                //WhatsApp
+                comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceWhatsApp).findFirst().get();
+                comService.sendTimetableNews(subscription_id, studentCourses);
+
+
             default:
                 break;
         }
     }
 
-    public ArrayList<Course> getCourseDataOfStudent(int student_id, int offsetDays){
+    public ArrayList<Course> getCourseDataOfStudent(int student_id, int offsetDays) {
         ZonedDateTime lDate = ZonedDateTime.now(zoneID).plusDays(offsetDays);
 
         ArrayList<Course> courses = timeTableScrapper.getCourses(lDate);
@@ -165,10 +172,10 @@ public class CommunicationLayer {
         try {
             while (coursesSet.next()) {
                 int course_id = coursesSet.getInt("course_id");
-                if (courses.stream().anyMatch(c -> c.getId() == course_id)){
+                if (courses.stream().anyMatch(c -> c.getId() == course_id)) {
                     Course course = courses.stream().filter(c -> c.getId() == course_id).findFirst().get();
 
-                    if (!course.getLessons().isEmpty()){
+                    if (!course.getLessons().isEmpty()) {
                         studentCourses.add(course);
                     }
                 }
@@ -226,8 +233,8 @@ public class CommunicationLayer {
         ResultSet set = LiteSQL.executeQuery(stmt);
         int id = -1;
         try {
-            if(set != null){
-                if (set.next()){
+            if (set != null) {
+                if (set.next()) {
                     id = set.getInt("id");
                     if (set.next()) {
                         set.close();

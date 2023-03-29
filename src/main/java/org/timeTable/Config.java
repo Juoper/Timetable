@@ -9,9 +9,9 @@ public class Config {
 
     public static Properties prop = new Properties();
 
-    public static String prefix;
     public static String ownerId;
-    public static String token;
+    public static String discordToken;
+    public static String whatsAppToken;
 
 
 
@@ -23,7 +23,8 @@ public class Config {
         } catch (IOException ignored) {
         }
 
-        token = prop.getProperty("Stundenplan.token");
+        discordToken = prop.getProperty("Stundenplan.discordToken");
+        whatsAppToken = prop.getProperty("Stundenplan.whatsAppToken");
         ownerId = prop.getProperty("Stundenplan.ownerId");
 
     }

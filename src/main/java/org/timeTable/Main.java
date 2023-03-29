@@ -1,6 +1,7 @@
 package org.timeTable;
 import org.timeTable.CommunicationLayer.CommunicationLayer;
 import org.timeTable.CommunicationLayer.services.ComServiceDiscord;
+import org.timeTable.CommunicationLayer.services.ComServiceWhatsApp;
 import org.timeTable.TimeTableScraper.TimeTableScrapper;
 
 import java.io.IOException;
@@ -23,6 +24,7 @@ public class Main {
         CommunicationLayer communicationLayer = new CommunicationLayer(timeTableScrapper);
         
         ComServiceDiscord discord = new ComServiceDiscord(communicationLayer);
+        ComServiceWhatsApp whatsApp = new ComServiceWhatsApp(communicationLayer);
     }
 
 }

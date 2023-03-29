@@ -51,7 +51,7 @@ public class ComServiceDiscord extends CommunicationService {
     public ComServiceDiscord(CommunicationLayer communicationLayer) {
         super(communicationLayer);
 
-        JDABuilder builder = JDABuilder.createDefault(Config.token);
+        JDABuilder builder = JDABuilder.createDefault(Config.discordToken);
 
         ActionListener listener = new ActionListener();
         builder
