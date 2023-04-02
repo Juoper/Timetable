@@ -30,8 +30,9 @@ import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
 import org.timeTable.CommunicationLayer.exceptions.subscriptionAlreadyExists;
 import org.timeTable.Config;
 import org.timeTable.LiteSQL;
-import org.timeTable.models.Course;
-import org.timeTable.models.Lesson;
+import org.timeTable.persistence.course.Course;
+import org.timeTable.persistence.lesson.Lesson;
+import org.timeTable.persistence.subscriptions.Subscription;
 
 import java.awt.*;
 import java.sql.ResultSet;
@@ -73,8 +74,8 @@ public class ComServiceDiscord extends CommunicationService {
         System.out.println("Bot online");
     }
 
-    public void sendTimetableNews(int subscription_id, ArrayList<Course> courses) {
-        ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 INNER JOIN student ON comService_0.student_id = student.id WHERE subscription_id = " + subscription_id);
+    public void sendTimetableNews(Subscription subscription, ArrayList<Course> courses) {
+        ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_0 INNER JOIN student ON comService_0.student_id = student.id WHERE subscription_id = " + subscription);
         if (set == null) return;
         long user_id;
         long channel_id;
@@ -330,7 +331,7 @@ public class ComServiceDiscord extends CommunicationService {
                 return;
             }
 
-            ArrayList<Course> courses = getCommunicationLayer().getCourseDataOfStudent(id, offsetdays);
+            ArrayList<Course> courses = getCommunicationLayer().getCourseDataOfStudent(, offsetdays);
             String channel_type;
             switch (event.getChannel().getType()) {
                 case TEXT -> channel_type = "text";

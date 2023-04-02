@@ -1,8 +1,5 @@
-package org.timeTable.models;
+package org.timeTable.persistence.lesson;
 
-import com.google.gson.*;
-
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 public class LessonResponse {

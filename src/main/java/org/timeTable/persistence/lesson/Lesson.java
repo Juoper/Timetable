@@ -1,32 +1,40 @@
-package org.timeTable.models;
+package org.timeTable.persistence.lesson;
 
-import com.google.gson.*;
+import org.timeTable.persistence.course.Course;
+import javax.persistence.*;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-
+@Entity
 public class Lesson {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @ManyToOne
     private Course course;
     private String room;
-    private int day;
-    private int hour;
-
-    private int startTime;
-    private int endTime;
+    private DayOfWeek day;
+    private LocalTime startTime;
+    private LocalTime endTime;
     private String cellstate;
 
-    public Lesson(int day, int hour) {
-        this.day = day;
-        this.hour = hour;
-
+    public Lesson() {
     }
-    public Lesson(Course course, int day, int hour, String cellstate, int startTime, int endTime) {
-        this.day = day;
-        this.hour = hour;
-        this.cellstate = cellstate;
+
+    public Lesson(Course course, DayOfWeek day, LocalTime startTime, LocalTime endTime) {
         this.course = course;
+        this.day = day;
         this.startTime = startTime;
         this.endTime = endTime;
+    }
+
+    public Lesson(Course course, DayOfWeek day, LocalTime startTime, LocalTime endTime, String cellstate) {
+        this.course = course;
+        this.day = day;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.cellstate = cellstate;
     }
 
     public void setCourse(Course course) {
@@ -37,33 +45,10 @@ public class Lesson {
         return course;
     }
 
-    public String getRoom() {
-        return room;
-    }
-
-    public int getDay() {
-        return day;
-    }
-
-    public int getHour() {
-        return hour;
-    }
-
-    public String toString() {
-        return String.format("Day: %d, Hour: %d, Room: %s, cellState: %s", day, hour, room, cellstate);
-    }
-
     public String getCellstate() {
         return cellstate;
     }
 
-    public int getStartTime() {
-        return startTime;
-    }
-
-    public int getEndTime() {
-        return endTime;
-    }
 
     public static int getLessonHour(int startTime) {
         int hour = 0;

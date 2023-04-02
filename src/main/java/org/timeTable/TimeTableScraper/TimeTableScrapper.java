@@ -1,7 +1,12 @@
 package org.timeTable.TimeTableScraper;
 
 import com.google.gson.*;
-import org.timeTable.models.*;
+import org.timeTable.persistence.course.Course;
+import org.timeTable.persistence.course.CourseResponse;
+import org.timeTable.persistence.course.CourseResponseDeserializer;
+import org.timeTable.persistence.lesson.Lesson;
+import org.timeTable.persistence.lesson.LessonResponse;
+import org.timeTable.persistence.lesson.LessonResponseDeserializer;
 
 import java.io.IOException;
 import java.time.LocalDate;

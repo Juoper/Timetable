@@ -1,5 +1,10 @@
 package org.timeTable.models;
 
+import org.timeTable.persistence.course.Course;
+import org.timeTable.persistence.lesson.Lesson;
+import org.timeTable.persistence.student.Student;
+import org.timeTable.persistence.teacher.Teacher;
+
 import java.util.ArrayList;
 import java.util.List;
 

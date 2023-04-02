@@ -1,15 +1,22 @@
 package org.timeTable.CommunicationLayer;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.timeTable.CommunicationLayer.exceptions.subscriptionAlreadyExists;
 import org.timeTable.LiteSQL;
-import org.timeTable.models.Course;
+import org.timeTable.persistence.course.Course;
+import org.timeTable.persistence.student.Student;
+import org.timeTable.persistence.subscriptions.Subscription;
+import org.timeTable.persistence.subscriptions.SubscriptionRepository;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Optional;
 
+@Service
 public abstract class CommunicationService {
+
+    private SubscriptionRepository subscriptionRepository;
 
     //Each Communication Service needs to have its own typeID, communicationID, studentID
     //                                                for example whatsapp has typeID 3
@@ -22,52 +29,44 @@ public abstract class CommunicationService {
         this.communicationLayer = communicationLayer.registerCommunicationService(this);
     }
 
+    @Autowired
+    public CommunicationService(SubscriptionRepository subscriptionRepository) {
+        this.subscriptionRepository = subscriptionRepository;
+    }
+
     public CommunicationLayer getCommunicationLayer() {
         return communicationLayer;
     }
 
-    protected abstract void sendTimetableNews(int subscription_id, ArrayList<Course> courses);
+    protected abstract void sendTimetableNews(Subscription subscription, ArrayList<Course> courses);
 
-    protected int subscribeTimetable(int studentId, int updateTime) throws subscriptionAlreadyExists {
+    protected Subscription subscribeTimetable(Student student, LocalTime updateTime, int typeId) throws subscriptionAlreadyExists {
 
-        int hour = updateTime / 100;
         int offsetDays = 0;
-        if (hour > 10){
+        if (updateTime.getHour() > 10) {
             offsetDays = 1;
         }
 
-        try {
-            PreparedStatement stmt = LiteSQL.prepareStatement("INSERT INTO subscriptions (student_id, type_id, update_rate, update_time, offsetDays) " +
-                    "VALUES (?, 0, 'daily', ?, ?) RETURNING subscription_id");
-            stmt.setString(1, String.valueOf(studentId));
-            stmt.setString(2, String.valueOf(updateTime));
-            stmt.setString(3, String.valueOf(offsetDays));
+        Subscription subscription = new Subscription(student, typeId, updateTime, offsetDays);
+        subscriptionRepository.save(subscription);
 
-            ResultSet set = LiteSQL.executeQuery(stmt);
+        return subscription;
 
-
-            int subscription_id = set.getInt("subscription_id");
-            set.close();
-
-            return subscription_id;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 
-    protected void unsubscribeTimetable(int subscription_id, int comServiceID) {
+    protected void unsubscribeTimetable(Subscription subscription, int comServiceID) {
 
         //Add null statement
-        LiteSQL.onUpdate("DELETE FROM subscriptions WHERE subscription_id = " + subscription_id);
-        LiteSQL.onUpdate("DELETE FROM comService_" + comServiceID + " WHERE subscription_id = " + subscription_id);
+        LiteSQL.onUpdate("DELETE FROM subscriptions WHERE subscription_id = " + subscription);
+        LiteSQL.onUpdate("DELETE FROM comService_" + comServiceID + " WHERE subscription_id = " + subscription);
 
-        communicationLayer.stopTimer(subscription_id);
+        communicationLayer.stopTimer(subscription.getId());
 
     }
 
-    protected void verifyTimetable(int subscription_id) {
-        LiteSQL.onUpdate("UPDATE subscriptions SET verified = 1 WHERE subscription_id = " + subscription_id + " AND verified = 0");
-        communicationLayer.newTimer(subscription_id);
+    protected void verifyTimetable(long subscription_id) {
+        Optional<Subscription> subscription = subscriptionRepository.findById(subscription_id);
+        subscription.ifPresent(value -> communicationLayer.newTimer(value));
     }
 
     public abstract void stopService();

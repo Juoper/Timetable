@@ -1,6 +1,9 @@
 package org.timeTable.models;
 
 import org.apache.commons.lang3.StringUtils;
+import org.timeTable.persistence.course.Course;
+import org.timeTable.persistence.lesson.Lesson;
+import org.timeTable.persistence.student.Student;
 
 import java.util.ArrayList;
 import java.util.List;
