@@ -28,6 +28,7 @@ import static org.timeTable.Main.zoneID;
 public class CommunicationLayer {
     ArrayList<CommunicationService> comServices;
     ScheduledExecutorService scheduledExecutorService;
+
     @Autowired
     SubscriptionRepository subscriptionRepository;
     private final TimeTableScrapper timeTableScrapper;
@@ -40,8 +41,11 @@ public class CommunicationLayer {
         runnableHashMap = new HashMap<>();
         scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
-        pullTimers();
         //sendTimetableNews(12);
+    }
+
+    public void startTimers() {
+        pullTimers();
     }
 
 
@@ -51,7 +55,7 @@ public class CommunicationLayer {
     }
 
     private void pullTimers() {
-        List<Subscription> subscriptions = subscriptionRepository.findAllByVerified();
+        List<Subscription> subscriptions = subscriptionRepository.findAllByVerifiedTrue();
         subscriptions.forEach(this::newTimer);
 
     }
@@ -112,7 +116,7 @@ public class CommunicationLayer {
             case 1:
                 //WhatsApp
                 comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceWhatsApp).findFirst().get();
-                comService.sendTimetableNews(subscription_id, studentCourses);
+                comService.sendTimetableNews(subscription, studentCourses);
 
 
             default:

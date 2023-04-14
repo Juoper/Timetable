@@ -32,6 +32,8 @@ public class Course {
         this.teacher = teacher;
         this.name = name;
         this.shortSubject = shortSubject;
+        this.lessons = new ArrayList<>();
+        this.students = new ArrayList<>();
     }
 
     public Student addStudent(Student student) {

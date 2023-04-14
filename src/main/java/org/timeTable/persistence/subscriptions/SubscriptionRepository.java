@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface SubscriptionRepository extends CrudRepository<Subscription, Long> {
-    public List<Subscription> findAllByVerified();
+    List<Subscription> findAllByVerifiedTrue();
 }

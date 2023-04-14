@@ -3,6 +3,7 @@ package org.timeTable.persistence.teacher;
 import org.timeTable.persistence.course.Course;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -13,16 +14,15 @@ public class Teacher {
     private String abbreviation;
     private String prename;
     private String surname;
-
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER)
     private List<Course> courses;
 
     public Teacher(String abbreviation) {
         this.abbreviation = abbreviation;
+        this.courses = new ArrayList<>();
     }
 
-    public String getAbbreviation() {
-        return abbreviation;
+    public Teacher() {
     }
 
     public void addCourse(Course course) {
@@ -33,7 +33,39 @@ public class Teacher {
         return id;
     }
 
-    public void setId(int id) {
+    public String getAbbreviation() {
+        return abbreviation;
+    }
+
+    public String getPrename() {
+        return prename;
+    }
+
+    public String getSurname() {
+        return surname;
+    }
+
+    public List<Course> getCourses() {
+        return courses;
+    }
+
+    public void setId(long id) {
         this.id = id;
+    }
+
+    public void setAbbreviation(String abbreviation) {
+        this.abbreviation = abbreviation;
+    }
+
+    public void setPrename(String prename) {
+        this.prename = prename;
+    }
+
+    public void setSurname(String surname) {
+        this.surname = surname;
+    }
+
+    public void setCourses(List<Course> courses) {
+        this.courses = courses;
     }
 }

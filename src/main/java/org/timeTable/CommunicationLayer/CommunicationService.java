@@ -40,20 +40,6 @@ public abstract class CommunicationService {
 
     protected abstract void sendTimetableNews(Subscription subscription, ArrayList<Course> courses);
 
-    protected Subscription subscribeTimetable(Student student, LocalTime updateTime, int typeId) throws subscriptionAlreadyExists {
-
-        int offsetDays = 0;
-        if (updateTime.getHour() > 10) {
-            offsetDays = 1;
-        }
-
-        Subscription subscription = new Subscription(student, typeId, updateTime, offsetDays);
-        subscriptionRepository.save(subscription);
-
-        return subscription;
-
-    }
-
     protected void unsubscribeTimetable(Subscription subscription, int comServiceID) {
 
         //Add null statement

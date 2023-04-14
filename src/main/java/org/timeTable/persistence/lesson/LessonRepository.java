@@ -8,5 +8,5 @@ import java.time.LocalTime;
 import java.util.List;
 
 public interface LessonRepository extends CrudRepository<Lesson, Long> {
-    List<Lesson> findByCourseAndDayOfWeekAndStartTimeAndEndTime(Course course, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime);
+    List<Lesson> findByCourseAndDayAndStartTimeAndEndTime(Course course, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime);
 }

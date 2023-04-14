@@ -19,10 +19,6 @@ public class Timetable {
         lessons = new Lesson[5][11];
     }
 
-    public void addLesson(Lesson lesson) {
-        lessons[lesson.getDay()][lesson.getHour()] = lesson;
-    }
-
     public Course addCourse(Course course) {
         if (courses.stream().noneMatch(c -> c.getName().equals(course.getName()) && c.getTeacher().getAbbreviation().equals(course.getTeacher().getAbbreviation()))) {
             courses.add(course);

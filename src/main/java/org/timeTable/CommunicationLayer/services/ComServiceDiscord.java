@@ -23,6 +23,8 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.timeTable.CommunicationLayer.CommunicationLayer;
 import org.timeTable.CommunicationLayer.CommunicationService;
 import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
@@ -32,25 +34,38 @@ import org.timeTable.Config;
 import org.timeTable.LiteSQL;
 import org.timeTable.persistence.course.Course;
 import org.timeTable.persistence.lesson.Lesson;
+import org.timeTable.persistence.student.Student;
+import org.timeTable.persistence.student.StudentRepository;
 import org.timeTable.persistence.subscriptions.Subscription;
+import org.timeTable.persistence.subscriptions.comServiceDiscord.ComServiceDiscordRepository;
+import org.timeTable.persistence.subscriptions.comServiceDiscord.ComServiceDiscordSubscription;
 
 import java.awt.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.List;
 
+@Service
 public class ComServiceDiscord extends CommunicationService {
 
     private final JDA jda;
     private static List<Long> verifiedUsers;
+
+    private final StudentRepository studentRepository;
+    private final ComServiceDiscordRepository comServiceDiscordRepository;
+
     private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
 
     //type ID: 0
 
-    public ComServiceDiscord(CommunicationLayer communicationLayer) {
+    @Autowired
+    public ComServiceDiscord(CommunicationLayer communicationLayer, StudentRepository studentRepository, ComServiceDiscordRepository comServiceDiscordRepository) {
         super(communicationLayer);
+        this.studentRepository = studentRepository;
+        this.comServiceDiscordRepository = comServiceDiscordRepository;
 
         JDABuilder builder = JDABuilder.createDefault(Config.discordToken);
 
@@ -116,11 +131,8 @@ public class ComServiceDiscord extends CommunicationService {
                 .setColor(new Color(9565856))
                 .setFooter("Made with love by Julian Thanner", "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Heart_coraz%C3%B3n.svg/1200px-Heart_coraz%C3%B3n.svg.png");
 
-        courses.sort((o1, o2) -> {
-            Lesson lesson1 = o1.getLessons().get(0);
-            Lesson lesson2 = o2.getLessons().get(0);
-            return Integer.compare(lesson1.getStartTime(), lesson2.getStartTime());
-        });
+
+        Collections.sort(courses, Comparator.comparing(o -> o.getLessons().get(0).getStartTime()));
 
         for (Course course : courses) {
             builder.addField("Course: " + course.getName(), course.getShortSubject(), false);
@@ -133,23 +145,13 @@ public class ComServiceDiscord extends CommunicationService {
         channel.sendMessageEmbeds(builder.build()).queue();
     }
 
-    private void unsubscribeTimetable(Long userID, Long channelID, String channel_type, int subscription_id) {
+    private void unsubscribeTimetable(Long userID, Long channelID, String channel_type, long subscription_id) {
 
         logger.info("Unsubscribing user " + userID + " from channel " + channelID + " with type " + channel_type + " and subscription id " + subscription_id);
-        ResultSet set = LiteSQL.onQuery("SELECT subscription_id FROM comService_0 WHERE user_id = " + userID + " AND channel_id = " + channelID + " AND channel_type = '" + channel_type + "' AND subscription_id = " + subscription_id);
+        ComServiceDiscordSubscription subscription = comServiceDiscordRepository.findById(subscription_id).get();
+        comServiceDiscordRepository.delete(subscription);
 
-        try {
-            if (!set.next()) {
-
-                return;
-            }
-            super.unsubscribeTimetable(set.getInt("subscription_id"), 0);
-            set.close();
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
+        super.unsubscribeTimetable(subscription, 0);
     }
 
     @Override
@@ -207,12 +209,13 @@ public class ComServiceDiscord extends CommunicationService {
 
             String prename = Objects.requireNonNullElse(event.getOption("prename", OptionMapping::getAsString), "");
             String surname = Objects.requireNonNullElse(event.getOption("surname", OptionMapping::getAsString), "");
-            int updateTime = Objects.requireNonNullElse(event.getOption("updatetime", OptionMapping::getAsInt), 730);
+            LocalTime updateTime = getLocalTimeFromInt(Objects.requireNonNullElse(event.getOption("updatetime", OptionMapping::getAsInt), 730));
 
-            int studentID;
+            long studentID;
 
             try {
                 studentID = getCommunicationLayer().getStudentIdByName(prename, surname);
+                System.out.println("Student id: " + studentID);
             } catch (noStudentFoundException e) {
                 hook.sendMessage("No student found with this name").queue();
                 return;
@@ -220,24 +223,33 @@ public class ComServiceDiscord extends CommunicationService {
                 hook.sendMessage("More then one student found with this name").queue();
                 return;
             }
+            ComServiceDiscordSubscription subscription = null;
 
+            int offsetDays = 0;
+            if (updateTime.getHour() > 10) {
+                offsetDays = 1;
+            }
 
-            int subscriptionID;
             try {
 
-                ResultSet set = LiteSQL.onQuery("SELECT comService_0.subscription_id FROM comService_0 INNER JOIN subscriptions ON comService_0.subscription_id = subscriptions.subscription_id WHERE subscriptions.student_id = " + studentID + " AND channel_id = " + event.getChannel().getIdLong() + " AND update_time = " + updateTime);
 
-                if (set.next()) {
-                    set.close();
+                if (false) {//add check
                     throw new subscriptionAlreadyExists("You are already subscribed to this timetable");
                 }
-                subscriptionID = ComServiceDiscord.this.subscribeTimetable(studentID, updateTime);
 
-                LiteSQL.onUpdate("INSERT INTO comService_0 (subscription_id, student_id, user_id, channel_id, channel_type) " +
-                        "VALUES (" + subscriptionID + ", " + studentID + ", " + user.getIdLong() + ", " + event.getChannel().getIdLong() + ", '" + channel_type + "')");
-            } catch (SQLException ignored) {
-                hook.sendMessage("An Error occurred. Please contact " + jda.getUserById(Config.ownerId).getAsMention()).queue();
-                return;
+                Student student = studentRepository.findById(studentID).get();
+
+                subscription = new ComServiceDiscordSubscription(
+                        student,
+                        0,
+                        updateTime,
+                        offsetDays,
+                        event.getUser().getIdLong(),
+                        event.getChannel().getIdLong(),
+                        channel_type,
+                        0);
+                                comServiceDiscordRepository.save(subscription);
+
             } catch (subscriptionAlreadyExists e) {
                 hook.sendMessage("You are already subscribed to the timetable of this student on this channel").queue();
                 return;
@@ -246,9 +258,9 @@ public class ComServiceDiscord extends CommunicationService {
             hook.sendMessage("You have successfully subscribed to your timetable, but you need verification by the Owner").queue();
 
             if (!isVerified(user.getIdLong())) {
-                sendVerificationMessage(user, prename + " " + "surname", "subverify", subscriptionID);
+                sendVerificationMessage(user, prename + " " + "surname", "subverify", subscription.getId());
             } else {
-                verifyTimetable(subscriptionID);
+                verifyTimetable(subscription.getId());
             }
 
         }
@@ -314,7 +326,7 @@ public class ComServiceDiscord extends CommunicationService {
                 offsetdays = 0;
             }
 
-            int id = -1;
+            long id = -1;
             try {
                 id = getCommunicationLayer().getStudentIdByName(prename, surname);
             } catch (noStudentFoundException e) {
@@ -325,13 +337,15 @@ public class ComServiceDiscord extends CommunicationService {
                 return;
             }
 
+            Student student = studentRepository.findById(id).get();
+
             if (!isVerified(user.getIdLong())) {
                 sendVerificationMessage(user, prename + " " + "surname", "getverify", user.getIdLong());
                 hook.sendMessage("You need to be verified by the owner to use this command. Please Try again later").queue();
                 return;
             }
 
-            ArrayList<Course> courses = getCommunicationLayer().getCourseDataOfStudent(, offsetdays);
+            ArrayList<Course> courses = getCommunicationLayer().getCourseDataOfStudent(student, offsetdays);
             String channel_type;
             switch (event.getChannel().getType()) {
                 case TEXT -> channel_type = "text";
@@ -350,6 +364,12 @@ public class ComServiceDiscord extends CommunicationService {
                         .addActionRow(Button.success(buttonPreFix + "_accept_" + buttonId, "Accept"), Button.danger(buttonPreFix + "_deny_" + buttonId, "Deny"))
                         .queue();
             });
+        }
+
+        private LocalTime getLocalTimeFromInt(int time) {
+            int hours = time / 100;
+            int minutes = time % 100;
+            return LocalTime.of(hours, minutes);
         }
 
         public void createSlashCommands() {

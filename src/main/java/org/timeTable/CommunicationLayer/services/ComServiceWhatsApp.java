@@ -16,9 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.timeTable.Main.zoneID;
 
@@ -57,11 +55,7 @@ public class ComServiceWhatsApp extends CommunicationService {
 
         StringBuilder builder = new StringBuilder();
 
-        courses.sort((o1, o2) -> {
-            Lesson lesson1 = o1.getLessons().get(0);
-            Lesson lesson2 = o2.getLessons().get(0);
-            return Integer.compare(lesson1.getStartTime(), lesson2.getStartTime());
-        });
+        Collections.sort(courses, Comparator.comparing(o -> o.getLessons().get(0).getStartTime()));
 
         if (Objects.equals(prename, "Q11")) {
             builder = buildTextForQ11(courses);
@@ -108,11 +102,7 @@ public class ComServiceWhatsApp extends CommunicationService {
 
     private StringBuilder buildTextForQ11(ArrayList<Course> courses) {
         StringBuilder builder = new StringBuilder();
-        courses.sort((o1, o2) -> {
-            Lesson lesson1 = o1.getLessons().get(0);
-            Lesson lesson2 = o2.getLessons().get(0);
-            return Integer.compare(lesson1.getStartTime(), lesson2.getStartTime());
-        });
+        Collections.sort(courses, Comparator.comparing(o -> o.getLessons().get(0).getStartTime()));
 
         builder.append("Diese Kurse fallen heute, am " + ZonedDateTime.now(zoneID).getDayOfWeek() + " aus\n\n");
 
@@ -129,25 +119,6 @@ public class ComServiceWhatsApp extends CommunicationService {
         }
         builder.append("\nAlle Angaben ohne Gewähr.");
         return builder;
-
-    }
-
-    private void unsubscribeTimetable(Long userID, Long channelID, String channel_type, int subscription_id) {
-
-        logger.info("Unsubscribing user " + userID + " from channel " + channelID + " with type " + channel_type + " and subscription id " + subscription_id);
-        ResultSet set = LiteSQL.onQuery("SELECT subscription_id FROM comService_0 WHERE user_id = " + userID + " AND channel_id = " + channelID + " AND channel_type = '" + channel_type + "' AND subscription_id = " + subscription_id);
-
-        try {
-            if (!set.next()) {
-
-                return;
-            }
-            super.unsubscribeTimetable(set.getInt("subscription_id"), 0);
-            set.close();
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
 
     }
 

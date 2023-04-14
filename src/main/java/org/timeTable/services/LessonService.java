@@ -5,9 +5,9 @@ import org.springframework.stereotype.Service;
 import org.timeTable.persistence.course.Course;
 import org.timeTable.persistence.lesson.Lesson;
 
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 
-@Repository
 public interface LessonService {
-    Lesson getLessonByCourseAndDayAndHour(Course course, int day, LocalTime startTime, LocalTime endTime);
+    Lesson getLessonByCourseAndDayAndHour(Course course, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime);
 }

@@ -1,4 +1,7 @@
 package org.timeTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.timeTable.CommunicationLayer.CommunicationLayer;
@@ -16,20 +19,18 @@ public class Main {
     //TODO
     //Change every name to prename + surname
     public static ZoneId zoneID = ZoneId.of( "Europe/Paris");
+    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
         SpringApplication.run(Main.class, args);
     }
 
-    public Main() throws IOException, InterruptedException {
+    @Autowired
+    public Main(CommunicationLayer communicationLayer, extractData extractData) throws IOException, InterruptedException {
         Config.loadConfig();
-        LiteSQL.connect();
-        TimeTableScrapper timeTableScrapper = new TimeTableScrapper();
+        extractData.extractFromPdf("Stundenplan.pdf");
 
-        CommunicationLayer communicationLayer = new CommunicationLayer(timeTableScrapper);
-
-        ComServiceDiscord discord = new ComServiceDiscord(communicationLayer);
-        ComServiceWhatsApp whatsApp = new ComServiceWhatsApp(communicationLayer);
+        communicationLayer.startTimers();
     }
 }

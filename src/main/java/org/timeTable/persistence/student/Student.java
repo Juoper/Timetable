@@ -21,7 +21,7 @@ public class Student {
 
     public Student(String fullname) {
         this.prename = fullname.split(" ")[0];
-        this.surname = surname.split(" ", 2)[1];
+        this.surname = fullname.split(" ", 2)[1];
     }
 
     public Student() {

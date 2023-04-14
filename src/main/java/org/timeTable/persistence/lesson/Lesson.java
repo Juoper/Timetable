@@ -11,12 +11,13 @@ public class Lesson {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     private Course course;
     private String room;
     private DayOfWeek day;
     private LocalTime startTime;
     private LocalTime endTime;
+    @Transient
     private String cellstate;
 
     public Lesson() {
@@ -49,6 +50,17 @@ public class Lesson {
         return cellstate;
     }
 
+    public DayOfWeek getDay() {
+        return day;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
 
     public static int getLessonHour(int startTime) {
         int hour = 0;

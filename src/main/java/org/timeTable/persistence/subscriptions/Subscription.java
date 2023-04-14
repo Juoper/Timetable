@@ -6,10 +6,11 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import java.io.Serializable;
 import java.time.LocalTime;
 
 @Entity
-public class Subscription {
+public abstract class Subscription implements Serializable{
 
     @Id
     @GeneratedValue

@@ -1,6 +1,7 @@
 package org.timeTable.TimeTableScraper;
 
 import com.google.gson.*;
+import org.springframework.stereotype.Service;
 import org.timeTable.persistence.course.Course;
 import org.timeTable.persistence.course.CourseResponse;
 import org.timeTable.persistence.course.CourseResponseDeserializer;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.timeTable.Main.zoneID;
 
+@Service
 public class TimeTableScrapper {
 
     private ArrayList<Course> courses;

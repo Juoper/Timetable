@@ -1,0 +1,31 @@
+version: "0.1"
+
+services:
+  db:
+    image: mariadb
+    container_name: mmos_mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=timetable
+    volumes:
+      - ./database:/var/lib/mysql
+    ports:
+      - 3306:3306
+    restart: always
+    entrypoint:
+      sh -c "
+      echo 'CREATE DATABASE IF NOT EXISTS timetable;' > /docker-entrypoint-initdb.d/init.sql;
+      /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      "
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: mmos_phpmyadmin
+    environment:
+      - PMA_HOST=db
+    restart: always
+    ports:
+      - 3001:80
+    volumes:
+      - /sessions
+    links:
+      - db
