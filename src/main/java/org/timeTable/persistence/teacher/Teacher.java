@@ -1,5 +1,6 @@
 package org.timeTable.persistence.teacher;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.timeTable.persistence.course.Course;
 
 import javax.persistence.*;
@@ -67,5 +68,17 @@ public class Teacher {
 
     public void setCourses(List<Course> courses) {
         this.courses = courses;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Teacher teacher) {
+
+            return new EqualsBuilder()
+                    .append(abbreviation, teacher.abbreviation)
+                    .isEquals();
+        } else {
+            return false;
+        }
     }
 }

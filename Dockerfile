@@ -1,6 +1,4 @@
-FROM openjdk:18
+FROM openjdk:17
 WORKDIR /
-ADD Stundenplan-1.0-SNAPSHOT.jar Stundenplan-1.0-SNAPSHOT.jar
-ADD datenbank.db /data/datenbank.db
-ADD Stundenplan.config /data/Stundenplan.config
-CMD ["java", "-jar", "Stundenplan-1.0-SNAPSHOT.jar"]
+ADD Stundenplan.jar Stundenplan.jar
+CMD ["java", "-jar", "Stundenplan.jar"]

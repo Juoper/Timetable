@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.timeTable.CommunicationLayer.CommunicationLayer;
+import org.timeTable.communicationLayer.CommunicationLayer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
@@ -17,9 +17,9 @@ import org.timeTable.persistence.student.Student;
 import org.timeTable.persistence.student.StudentRepository;
 import org.timeTable.persistence.teacher.TeacherRepository;
 import org.timeTable.services.LessonService;
+import org.timeTable.services.StudentService;
 import org.timeTable.services.TeacherService;
 
-import javax.transaction.Transactional;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
@@ -28,27 +28,29 @@ import java.time.LocalTime;
 import java.util.List;
 
 
-@Transactional
 @Service
 public class extractData {
 
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final TeacherRepository teacherRepository;
-    private final TeacherService teacherService;
-    private final LessonService lessonService;
-
-    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
     private final StudentRepository studentRepository;
 
+    private final TeacherService teacherService;
+    private final LessonService lessonService;
+    private final StudentService studentService;
+
+    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
+
     @Autowired
-    public extractData(CourseRepository courseRepository, LessonRepository lessonRepository, TeacherRepository teacherRepository, TeacherService teacherService, LessonService lessonService, StudentRepository studentRepository) {
+    public extractData(CourseRepository courseRepository, LessonRepository lessonRepository, TeacherRepository teacherRepository, TeacherService teacherService, LessonService lessonService, StudentRepository studentRepository, StudentService studentService) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
         this.teacherRepository = teacherRepository;
         this.teacherService = teacherService;
         this.lessonService = lessonService;
         this.studentRepository = studentRepository;
+        this.studentService = studentService;
     }
 
     public void extractFromPdf(String path) throws IOException {
@@ -68,7 +70,7 @@ public class extractData {
         PDFTextStripperByArea stripperStudentName = new PDFTextStripperByArea();
         stripperStudentName.setSortByPosition(true);
 
-        Rectangle rectStudentName = new Rectangle(180, 3609 - 3450, 705, 50);
+        Rectangle rectStudentName = new Rectangle(180, 159, 1300, 50);
         stripperStudentName.addRegion("studentName", rectStudentName);
         stripperStudentName.extractRegions(page);
 
@@ -76,9 +78,9 @@ public class extractData {
         studentName = studentName.replace("\r\n", "");
         studentName = studentName.trim();
 
-        Student student = new Student(studentName);
         logger.info("Student: " + studentName);
-        studentRepository.save(student);
+
+        Student student = studentService.getOrCreateStudent(studentName);
 
         PDFTextStripperByArea stripper = new PDFTextStripperByArea();
         stripper.setSortByPosition(true);
@@ -86,12 +88,12 @@ public class extractData {
         prepareStripper(stripper);
 
         stripper.extractRegions(page);
-
-        for (int hour = 0; hour < 11; hour++) {
-            for (int day = 0; day < 5; day++) {
+        for (int day = 0; day < 5; day++) {
+            for (int hour = 0; hour < 11; hour++) {
                 stripText(day, hour, student, stripper);
             }
         }
+        studentRepository.save(student);
     }
 
     private void stripText(int day, int hour, Student student, PDFTextStripperByArea stripper) {
@@ -108,29 +110,26 @@ public class extractData {
                 .replace("\r\n ", "")
                 .replace("\r\n", "");
 
-
         //{Kursname} {Kurskürzel} {Lehrer}
         String[] split = text.split(" ");
 
-
         if (split.length == 3) {
             String courseShortSubject = removeTypos(split[0]);
-            String courseAbbreviation = removeTypos(split[1]);
+            String courseName = removeTypos(split[1]);
             String teacherAbbreviation = removeTypos(split[2]).toUpperCase();
 
-            if (teacherAbbreviation.equals("ISE") && courseAbbreviation.equals("QWU")) {
-                courseAbbreviation = "QWU_ISE";
+            if (teacherAbbreviation.equals("ISE") && courseName.equals("QWU")) {
+                courseName = "QWU_ISE";
+            }
+            if (courseName.equals("Smw/P1/")) {
+                courseName = courseName + teacherAbbreviation;
             }
 
-            if (split[1].equals("Smw/P1/")) {
-                split[1] = split[1] + split[2];
-            }
+            Course course = getOrCreateCourseByName(courseShortSubject, courseName, teacherAbbreviation);
 
-            Course course = getCourseByShortSubject(courseShortSubject, courseAbbreviation, teacherAbbreviation);
 
-            if (course == null) {
-                logger.error("Course is null");
-            }
+            student.addCourse(course);
+            studentRepository.save(student);
 
             teacherService.addCourseToTeacher(course.getTeacher(), course);
 
@@ -139,29 +138,29 @@ public class extractData {
 
             Lesson lesson = lessonService.getLessonByCourseAndDayAndHour(course, DayOfWeek.of(day + 1), startTime, endTime);
 
-            course.lessons.add(lesson);
             course.addStudent(student);
+            course.addLesson(lesson);
+            courseRepository.save(course);
 
         }
     }
 
-    private Course getCourseByShortSubject(String courseShortSubject, String courseAbbreviation, String teacherAbbreviation) {
+    private Course getOrCreateCourseByName(String courseShortSubject, String courseName, String teacherAbbreviation) {
         //TODO move to courseService
-        List<Course> coursesByAbbreviation = courseRepository.findByShortSubject(courseAbbreviation);
+        List<Course> coursesByName = courseRepository.findByName(courseName);
         Course course = null;
-        if (coursesByAbbreviation == null || coursesByAbbreviation.size() == 0) {
-            course = new Course(teacherService.getTeacherByAbbreviation(teacherAbbreviation), courseShortSubject, courseAbbreviation);
-            courseRepository.save(course);
-        } else if (coursesByAbbreviation.size() == 1) {
-            course = coursesByAbbreviation.get(0);
+        if (coursesByName == null || coursesByName.size() == 0) {
+            course = new Course(teacherService.getOrCreateTeacherByAbbreviation(teacherAbbreviation), courseName, courseShortSubject);
+            course = courseRepository.save(course);
+        } else if (coursesByName.size() == 1) {
+            course = coursesByName.get(0);
 
         } else {
-            logger.error("More than one course with the same abbreviation found: " + courseAbbreviation);
+            logger.error("More than one course with the same abbreviation found: " + courseName);
         }
 
         return course;
     }
-
 
     private void prepareStripper(PDFTextStripperByArea stripper) {
         for (int hour = 0; hour < 11; hour++) {
@@ -173,8 +172,6 @@ public class extractData {
     }
 
     public String removeTypos(String text) {
-
-
         return text
 
                 .replace("|GOE", "GOE")
@@ -234,7 +231,7 @@ public class extractData {
                 ;
     }
 
-    private LocalTime coordinateToStartTime(int hour){
+    private LocalTime coordinateToStartTime(int hour) {
         LocalTime startTime = LocalTime.of(8, 0);
 
         switch (hour + 1) {

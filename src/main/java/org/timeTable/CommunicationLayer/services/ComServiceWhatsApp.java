@@ -1,64 +1,60 @@
-package org.timeTable.CommunicationLayer.services;
+package org.timeTable.communicationLayer.services;
 
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.timeTable.CommunicationLayer.CommunicationLayer;
-import org.timeTable.CommunicationLayer.CommunicationService;
-import org.timeTable.Config;
-import org.timeTable.LiteSQL;
+import org.springframework.stereotype.Service;
+import org.timeTable.communicationLayer.CommunicationLayer;
+import org.timeTable.communicationLayer.CommunicationService;
+import org.timeTable.communicationLayer.exceptions.NoCanceledCoursesException;
 import org.timeTable.persistence.course.Course;
 import org.timeTable.persistence.lesson.Lesson;
 import org.timeTable.persistence.subscriptions.Subscription;
+import org.timeTable.persistence.subscriptions.SubscriptionRepository;
+import org.timeTable.persistence.subscriptions.comServiceWhatsApp.ComServiceWhatsAppSubscription;
 
 import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 
 import static org.timeTable.Main.zoneID;
 
+@Service
 public class ComServiceWhatsApp extends CommunicationService {
-    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
+    private final Logger logger = LoggerFactory.getLogger(ComServiceWhatsApp.class);
+    private final CommunicationLayer communicationLayer;
 
-    //type ID: 0
+    public ComServiceWhatsApp(SubscriptionRepository subscriptionRepository, CommunicationLayer communicationLayer) {
+        super(subscriptionRepository,communicationLayer);
+        this.communicationLayer = communicationLayer;
+        communicationLayer.registerCommunicationService(this);
 
-    public ComServiceWhatsApp(CommunicationLayer communicationLayer) {
-        super(communicationLayer);
 
-        System.out.println("WhatsApp online");
+        logger.info("WhatsApp online");
     }
 
     public void sendTimetableNews(Subscription subscription, ArrayList<Course> courses) {
-        ResultSet set = LiteSQL.onQuery("SELECT * FROM comService_1 INNER JOIN student ON comService_1.student_id = student.id WHERE subscription_id = " + subscription);
-        if (set == null) return;
-        String phone_number = "";
-        String prename = null;
-        String surname = null;
 
-        try {
-            phone_number = set.getString("phone_number");
-            prename = set.getString("prename");
-            surname = set.getString("surname");
-            set.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        if (subscription instanceof ComServiceWhatsAppSubscription comServiceWhatsAppSubscription) {
+            sendTimetableNews(comServiceWhatsAppSubscription.getPhone_number(), comServiceWhatsAppSubscription.getStudent().getPrename(), courses);
+            logger.info("Sending timetable news to " + subscription.student.getPrename() + " " + subscription.student.getSurname() + " with phone number: " + comServiceWhatsAppSubscription.getPhone_number() + " at " + LocalDateTime.now());
         }
-        logger.info("Sending timetable news to " + prename + " " + surname + " with phone number: " + phone_number + " at " + LocalDateTime.now());
-
-        sendTimetableNews(phone_number, prename, surname, courses);
     }
 
-    private void sendTimetableNews(String phone_number, String prename, String surname, ArrayList<Course> courses) {
+    private void sendTimetableNews(String phoneNumber, String prename, ArrayList<Course> courses) {
 
         StringBuilder builder = new StringBuilder();
 
-        Collections.sort(courses, Comparator.comparing(o -> o.getLessons().get(0).getStartTime()));
+        courses.sort(Comparator.comparing(o -> o.getLessons().iterator().next().getStartTime()));
 
         if (Objects.equals(prename, "Q11")) {
-            builder = buildTextForQ11(courses);
+            try {
+                builder = buildTextForQ11(courses);
+            } catch (NoCanceledCoursesException e) {
+                logger.info("No canceled courses found at {} ", LocalDateTime.now());
+                return;
+            }
         } else {
 
             for (Course course : courses) {
@@ -67,7 +63,7 @@ public class ComServiceWhatsApp extends CommunicationService {
                         .append(" | ")
                         .append(course.getShortSubject())
                         .append("\n");
-                List<Lesson> lessonList = course.getLessons();
+                List<Lesson> lessonList = course.getLessons().stream().toList();
                 for (Lesson lesson : lessonList) {
                     builder.append(lesson.getStartTime()).append(" - ").append(lesson.getEndTime()).append(" | ")
                             .append(lesson.getCellstate())
@@ -78,31 +74,37 @@ public class ComServiceWhatsApp extends CommunicationService {
 
         OkHttpClient client = new OkHttpClient();
         RequestBody body = new FormBody.Builder()
-                .add("token", Config.whatsAppToken)
-                .add("to", "+" + phone_number)
-                //TODO add group support
-                .add("body", builder.toString())
+                .add("chatId", phoneNumber)
+                .add("text", builder.toString())
+                .add("session", "default")
                 .build();
 
         Request request = new Request.Builder()
-                .url("https://api.ultramsg.com/instance41859/messages/chat")
+                .url("http://whatsapp:3000/api/sendText")
                 .post(body)
-                .addHeader("content-type", "application/x-www-form-urlencoded")
+                .addHeader("content-type", "application/json")
                 .build();
 
-        Response response = null;
         try {
-            response = client.newCall(request).execute();
-            System.out.println(response.body().string());
+            Response response = client.newCall(request).execute();
+            response.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logger.error(e.toString());
+            logger.error("Error while sending timetable news to " + prename + " " + phoneNumber + " at " + LocalDateTime.now());
         }
 
     }
 
-    private StringBuilder buildTextForQ11(ArrayList<Course> courses) {
+    private StringBuilder buildTextForQ11(ArrayList<Course> courses) throws NoCanceledCoursesException {
+
+        if (courses.stream().filter(course -> course.getLessons().stream().anyMatch(l -> l.getCellstate().equals("CANCEL"))).toList().isEmpty()) {
+            throw new NoCanceledCoursesException();
+        }
+
+        logger.info("Building text for Q11 at {} ", courses.size());
+
         StringBuilder builder = new StringBuilder();
-        Collections.sort(courses, Comparator.comparing(o -> o.getLessons().get(0).getStartTime()));
+        Collections.sort(courses, Comparator.comparing(o -> o.getLessons().iterator().next().getStartTime()));
 
         builder.append("Diese Kurse fallen heute, am " + ZonedDateTime.now(zoneID).getDayOfWeek() + " aus\n\n");
 
@@ -124,7 +126,6 @@ public class ComServiceWhatsApp extends CommunicationService {
 
     @Override
     public void stopService() {
-
 
     }
 }

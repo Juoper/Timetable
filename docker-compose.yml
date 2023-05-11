@@ -3,7 +3,7 @@ version: "0.1"
 services:
   db:
     image: mariadb
-    container_name: mmos_mariadb
+    container_name: timetable_mariadb
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=timetable
@@ -18,8 +18,8 @@ services:
       /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
       "
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: mmos_phpmyadmin
+    image: arm64v8/phpmyadmin
+    container_name: timetable_phpmyadmin
     environment:
       - PMA_HOST=db
     restart: always
@@ -29,3 +29,26 @@ services:
       - /sessions
     links:
       - db
+
+  stundenplan:
+    image: stundenplan
+    container_name: timeTableMain
+    restart: "no"
+    tty: true
+    stdin_open: true
+    volumes:
+      - /data
+    links:
+      - db
+      - whatsapp
+
+  whatsapp:
+    image: devlikeapro/whatsapp-http-api:arm
+    container_name: whatsapp
+    restart: always
+    ports:
+      - 3000:3000
+    volumes:
+      - /.sessions:/app/.sessions
+
+

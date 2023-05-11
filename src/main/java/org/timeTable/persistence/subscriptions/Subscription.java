@@ -1,11 +1,9 @@
 package org.timeTable.persistence.subscriptions;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.timeTable.persistence.student.Student;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalTime;
 
@@ -13,29 +11,53 @@ import java.time.LocalTime;
 public abstract class Subscription implements Serializable{
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
     public Student student;
-    int typeId;
-    public LocalTime updateTime;
-    public int offsetDays;
+    private LocalTime updateTime;
+    private int offsetDays;
     boolean verified;
+
+    public Subscription() {
+
+    }
 
     public Long getId() {
         return id;
     }
 
-    public int getTypeId() {
-        return typeId;
-    }
-
-    public Subscription(Student student, int typeId, LocalTime updateTime, int offsetDays) {
+    public Subscription(Student student, LocalTime updateTime, int offsetDays) {
         this.student = student;
-        this.typeId = typeId;
         this.updateTime = updateTime;
         this.offsetDays = offsetDays;
         this.verified = false;
+    }
+
+    public Student getStudent() {
+        return student;
+    }
+
+    public LocalTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public int getOffsetDays() {
+        return offsetDays;
+    }
+
+    public boolean isVerified() {
+        return verified;
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+                .append(id)
+                .append(student.getId())
+                .append(updateTime)
+                .append(offsetDays)
+                .toHashCode();
     }
 }

@@ -1,12 +1,13 @@
 package org.timeTable.persistence.course;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.timeTable.persistence.student.Student;
 import org.timeTable.persistence.teacher.Teacher;
 import org.timeTable.persistence.lesson.Lesson;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 @Entity
@@ -14,16 +15,16 @@ public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
-    int untisId;
+    private int untisId;
     @ManyToOne
     private Teacher teacher;
     private String name;
     private String shortSubject;
     private String subject;
     @OneToMany
-    public List<Lesson> lessons;
+    public Set<Lesson> lessons;
     @ManyToMany
-    public List<Student> students;
+    private List<Student> students;
 
     public Course() {
     }
@@ -32,19 +33,19 @@ public class Course {
         this.teacher = teacher;
         this.name = name;
         this.shortSubject = shortSubject;
-        this.lessons = new ArrayList<>();
+        this.lessons = new HashSet<Lesson>();
         this.students = new ArrayList<>();
     }
 
-    public Student addStudent(Student student) {
-        if (students.stream().noneMatch(s -> s.getPrename().equals(student.getPrename()) && s.getSurname().equals(student.getSurname()))) {
-            students.add(student);
-            return student;
-        } else {
-            return students.stream().filter(s -> s.getPrename().equals(student.getPrename()) && s.getSurname().equals(student.getSurname())).findFirst().get();
+    public void addStudent(Student student) {
+        if (students.contains(student)) {
+            return;
         }
+            students.add(student);
     }
-
+    public void addLesson(Lesson lesson) {
+        lessons.add(lesson);
+    }
     public long getId() {
         return id;
     }
@@ -61,7 +62,7 @@ public class Course {
         return subject;
     }
 
-    public List<Lesson> getLessons() {
+    public Set<Lesson> getLessons() {
         return lessons;
     }
 
@@ -80,13 +81,54 @@ public class Course {
     public String toString() {
         return "Course{" +
                 "id=" + id +
-                ", teacher=" + teacher +
+                ", teacher=" + teacher.getAbbreviation() +
                 ", name='" + name + '\'' +
                 ", shortSubject='" + shortSubject + '\'' +
                 ", subject='" + subject + '\'' +
-                ", lessons=" + lessons +
-                ", students=" + students +
                 ", untisId=" + untisId +
                 '}';
     }
+
+    public void setUntisId(int untisId) {
+        this.untisId = untisId;
+    }
+
+    public void setTeacher(Teacher teacher) {
+        this.teacher = teacher;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setShortSubject(String shortSubject) {
+        this.shortSubject = shortSubject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+                .append(id)
+                .append(name)
+                .append(teacher)
+                .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Course course) {
+
+            return new EqualsBuilder()
+                    .append(name, course.name)
+                    .append(teacher.getAbbreviation(), course.teacher.getAbbreviation())
+                    .isEquals();
+        } else {
+            return false;
+        }
+    }
+
 }

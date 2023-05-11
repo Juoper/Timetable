@@ -1,5 +1,7 @@
 package org.timeTable.persistence.lesson;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.timeTable.persistence.course.Course;
 import javax.persistence.*;
 import java.time.DayOfWeek;
@@ -11,7 +13,7 @@ public class Lesson {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
     private Course course;
     private String room;
     private DayOfWeek day;
@@ -63,24 +65,57 @@ public class Lesson {
     }
 
     public static int getLessonHour(int startTime) {
-        int hour = 0;
-
-        switch (startTime){
-            case 800: hour = 1; break;
-            case 845: hour = 2; break;
-            case 945: hour = 3; break;
-            case 1030: hour = 4; break;
-            case 1135: hour = 5; break;
-            case 1220: hour = 6; break;
-            case 1315: hour = 7; break;
-            case 1400: hour = 8; break;
-            case 1445: hour = 9; break;
-            case 1530: hour = 10; break;
-            case 1615: hour = 11; break;
-        }
+        int hour = switch (startTime) {
+            case 800 -> 1;
+            case 845 -> 2;
+            case 945 -> 3;
+            case 1030 -> 4;
+            case 1135 -> 5;
+            case 1220 -> 6;
+            case 1315 -> 7;
+            case 1400 -> 8;
+            case 1445 -> 9;
+            case 1530 -> 10;
+            case 1615 -> 11;
+            default -> 0;
+        };
 
 
         return hour;
+    }
+
+    public String toString() {
+        return "Lesson:{" +
+                "id=" + id +
+                ", course=" + course.getName() +
+                ", day='" + day + '\'' +
+                ", startTime='" + startTime + '\'' +
+                ", cellstate='" + cellstate + '\'' +
+                '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+                .append(id)
+                .append(startTime)
+                .append(endTime)
+                .append(day)
+                .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Lesson lesson) {
+            return new EqualsBuilder()
+                    .append(id, lesson.id)
+                    .append(day, lesson.day)
+                    .append(startTime, lesson.startTime)
+                    .append(endTime, lesson.endTime)
+                    .isEquals();
+        } else {
+            return false;
+        }
     }
 }
 

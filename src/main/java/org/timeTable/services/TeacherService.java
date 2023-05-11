@@ -7,5 +7,5 @@ import org.timeTable.persistence.teacher.Teacher;
 @Service
 public interface TeacherService {
      void addCourseToTeacher(Teacher teacher, Course course);
-    Teacher getTeacherByAbbreviation(String teacherAbbreviation);
+    Teacher getOrCreateTeacherByAbbreviation(String teacherAbbreviation);
 }

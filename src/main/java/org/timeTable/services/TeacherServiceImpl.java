@@ -20,7 +20,7 @@ public class TeacherServiceImpl implements TeacherService {
 
     @Override
     public void addCourseToTeacher(Teacher teacher, Course course) {
-        if (teacher.getCourses() == null){
+        if (teacher.getCourses().size() == 0){
             teacher.addCourse(course);
         } else if (!teacher.getCourses().contains(course)){
             teacher.addCourse(course);
@@ -30,12 +30,12 @@ public class TeacherServiceImpl implements TeacherService {
     }
 
     @Override
-    public Teacher getTeacherByAbbreviation(String teacherAbbreviation) {
+    public Teacher getOrCreateTeacherByAbbreviation(String teacherAbbreviation) {
         List<Teacher> teachersByAbbreviation = teacherRepository.findByAbbreviation(teacherAbbreviation);
-        Teacher teacher = null;
+        Teacher teacher;
         if (teachersByAbbreviation == null || teachersByAbbreviation.size() == 0) {
             teacher = new Teacher(teacherAbbreviation);
-            teacherRepository.save(teacher);
+            teacher = teacherRepository.save(teacher);
         } else if (teachersByAbbreviation.size() == 1) {
             teacher = teachersByAbbreviation.get(0);
         } else {

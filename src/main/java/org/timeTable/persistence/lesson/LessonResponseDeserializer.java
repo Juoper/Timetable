@@ -1,18 +1,20 @@
 package org.timeTable.persistence.lesson;
 
 import com.google.gson.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.timeTable.communicationLayer.CommunicationLayer;
 import org.timeTable.persistence.course.Course;
 
 import java.lang.reflect.Type;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-
-import static org.timeTable.persistence.lesson.Lesson.getLessonHour;
+import java.util.Optional;
 
 public class LessonResponseDeserializer implements JsonDeserializer<LessonResponse> {
+    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
 
     private final ArrayList<Course> courses;
     private final ZonedDateTime date;
@@ -35,16 +37,33 @@ public class LessonResponseDeserializer implements JsonDeserializer<LessonRespon
             JsonObject jObject = (JsonObject) jArray.get(i);
             int id = jObject.get("elements").getAsJsonArray().get(jObject.get("elements").getAsJsonArray().size() - 1).getAsJsonObject().get("id").getAsInt();
             String date = jObject.get("date").getAsString();
-            LocalTime startTime = LocalTime.parse(jObject.get("startTime").getAsString());
-            LocalTime endTime = LocalTime.parse(jObject.get("endTime").getAsString());
+            String startTimePattern = "HHmm";
+            if (jObject.get("startTime").getAsString().length() == 3) {
+                 startTimePattern = "Hmm";
+            }
+            String endTimePattern = "HHmm";
+            if (jObject.get("endTime").getAsString().length() == 3) {
+                endTimePattern = "Hmm";
+            }
 
-            String cellstate = jObject.get("cellState").getAsString();
+            LocalTime startTime = LocalTime.parse(jObject.get("startTime").getAsString(), DateTimeFormatter.ofPattern(startTimePattern));
+            LocalTime endTime = LocalTime.parse(jObject.get("endTime").getAsString(), DateTimeFormatter.ofPattern(endTimePattern));
+
+            String cellState = jObject.get("cellState").getAsString();
 
             if (date.equals(localDate)) {
-                Course course = courses.stream().filter(c -> c.getUntisId() == id).findFirst().get();
-                Lesson lesson = new Lesson(course, this.date.getDayOfWeek(), startTime, endTime, cellstate);
-                course.lessons.add(lesson);
-                lessonResponse.elements.add(lesson);
+
+                Optional<Course> course = courses.stream().filter(c -> c.getUntisId() == id).findFirst();
+
+                if (course.isEmpty()) {
+                    //logger.warn("Found lesson without matching database entry: " + id);
+                } else {
+                    Lesson lesson = new Lesson(course.get(), this.date.getDayOfWeek(), startTime, endTime, cellState);
+                    course.get().addLesson(lesson);
+                    lessonResponse.elements.add(lesson);
+                }
+
+
             }
         }
 
