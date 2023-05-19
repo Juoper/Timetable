@@ -1,4 +1,4 @@
-package org.timeTable.models;
+package org.timeTable.persistence.course;
 
 import java.util.ArrayList;
 

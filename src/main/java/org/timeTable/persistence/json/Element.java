@@ -1,4 +1,4 @@
-package org.timeTable.models.json;
+package org.timeTable.persistence.json;
 
 public class Element {
     private float type;

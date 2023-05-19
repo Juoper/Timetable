@@ -1,6 +1,4 @@
-package org.timeTable.models.json;
-
-import java.time.Period;
+package org.timeTable.persistence.json;
 
 public class ElementPeriod {
     public int startTime;

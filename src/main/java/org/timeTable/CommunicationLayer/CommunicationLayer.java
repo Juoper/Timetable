@@ -1,94 +1,82 @@
-package org.timeTable.CommunicationLayer;
+package org.timeTable.communicationLayer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.timeTable.CommunicationLayer.exceptions.moreThenOneStudentFoundException;
-import org.timeTable.CommunicationLayer.exceptions.noStudentFoundException;
-import org.timeTable.CommunicationLayer.services.ComServiceDiscord;
-import org.timeTable.CommunicationLayer.services.ComServiceWhatsApp;
-import org.timeTable.LiteSQL;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.timeTable.communicationLayer.exceptions.MoreThanOneStudentFoundException;
+import org.timeTable.communicationLayer.exceptions.NoStudentFoundException;
+import org.timeTable.communicationLayer.services.ComServiceDiscord;
+import org.timeTable.communicationLayer.services.ComServiceWhatsApp;
 import org.timeTable.TimeTableScraper.TimeTableScrapper;
-import org.timeTable.models.Course;
+import org.timeTable.persistence.course.Course;
+import org.timeTable.persistence.lesson.Lesson;
+import org.timeTable.persistence.student.Student;
+import org.timeTable.persistence.student.StudentRepository;
+import org.timeTable.persistence.subscriptions.Subscription;
+import org.timeTable.persistence.subscriptions.SubscriptionRepository;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 import static org.timeTable.Main.zoneID;
 
+@Service
 public class CommunicationLayer {
-    ArrayList<CommunicationService> comServices;
     ScheduledExecutorService scheduledExecutorService;
+    ArrayList<CommunicationService> comServices;
+
+    private final SubscriptionRepository subscriptionRepository;
     private final TimeTableScrapper timeTableScrapper;
-
-    private final HashMap<Integer, ScheduledFuture<?>> runnableHashMap;
-
+    private final HashMap<Long, ScheduledFuture<?>> runnableHashMap;
+    private final HashMap<Long, Integer> subscriptionsHashMap;
     private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
+    private final StudentRepository studentRepository;
 
-    public CommunicationLayer(TimeTableScrapper timeTableScrapper) {
+    @Autowired
+    public CommunicationLayer(SubscriptionRepository subscriptionRepository, TimeTableScrapper timeTableScrapper, StudentRepository studentRepository) {
+        this.subscriptionRepository = subscriptionRepository;
         this.timeTableScrapper = timeTableScrapper;
+        this.studentRepository = studentRepository;
         comServices = new ArrayList<>();
+
         runnableHashMap = new HashMap<>();
+        subscriptionsHashMap = new HashMap<>();
         scheduledExecutorService = Executors.newScheduledThreadPool(1);
-
-        pullTimers();
-        //sendTimetableNews(12);
-
     }
 
-    public CommunicationLayer registerCommunicationService(CommunicationService service) {
-        comServices.add(service);
-        return this;
+    public void startTimers() {
+        pullTimers();
     }
 
     private void pullTimers() {
-        ResultSet resultSet = LiteSQL.onQuery("SELECT * FROM subscriptions WHERE verified = 1");
-
-        try {
-            while (resultSet.next()) {
-                //fix times that are in the past
-                int hour = resultSet.getInt("update_time") / 100;
-                int minute = resultSet.getInt("update_time") % 100;
-                int subscription_id = resultSet.getInt("subscription_id");
-                int offsetDays = resultSet.getInt("offsetDays");
-
-                newTimer(subscription_id, hour, minute, offsetDays);
-
-            }
-            resultSet.close();
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    void newTimer(int subscription_id) {
-        ResultSet set = LiteSQL.onQuery("SELECT * FROM subscriptions WHERE subscription_id = " + subscription_id);
-        try {
-            int hour = set.getInt("update_time") / 100;
-            int minute = set.getInt("update_time") % 100;
-            int offsetDays = set.getInt("offsetDays");
-
-            newTimer(subscription_id, hour, minute, offsetDays);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
+        logger.info("Pulling timers from database");
+        List<Subscription> subscriptions = subscriptionRepository.findAllByVerifiedTrue();
+        subscriptions.forEach(this::newTimer);
 
     }
 
-    void newTimer(int subscription_id, int hour, int minute, int offsetDays) {
+    void newTimer(Subscription subscription) {
+
+        if (subscriptionsHashMap.containsValue(subscription.hashCode())) {
+            logger.info("Timer already exists for subscription_id: " + subscription.getId());
+            return;
+        } else {
+            stopTimer(subscription.getId());
+            subscriptionsHashMap.remove(subscription.getId());
+            runnableHashMap.remove(subscription.getId());
+        }
+
+
 
         ZonedDateTime now = ZonedDateTime.now(zoneID);
-        ZonedDateTime nextRun = now.withHour(hour).withMinute(minute).withSecond(0);
+        ZonedDateTime nextRun = ZonedDateTime.of(subscription.getUpdateTime().atDate(LocalDate.now()), ZoneId.of("ECT", ZoneId.SHORT_IDS));
 
         Duration duration = Duration.between(now, nextRun);
         long initialDelay = duration.getSeconds();
 
-        logger.info("New Timer created for subscription_id: " + subscription_id + " and sending time for " + hour + ":" + minute + " with offset of " + offsetDays + " days");
+        logger.info("New Timer created for subscription_id: " + subscription.getId() + " and sending time for " + subscription.getUpdateTime() + " with offset of " + subscription.getOffsetDays() + " days");
 
         if (initialDelay < 0) {
             initialDelay = TimeUnit.HOURS.toSeconds(24) + initialDelay;
@@ -101,167 +89,104 @@ public class CommunicationLayer {
 
                     Calendar c = Calendar.getInstance();
                     //if excuted at thursday evening then send the data again at saturday evening
-                    if (c.get(Calendar.DAY_OF_WEEK) == 6 - offsetDays) {
+                    if (c.get(Calendar.DAY_OF_WEEK) == 6 - subscription.getOffsetDays()) {
                         scheduledExecutorService.schedule(this, 3, TimeUnit.DAYS);
                     } else {
                         scheduledExecutorService.schedule(this, 1, TimeUnit.DAYS);
                     }
-                    sendTimetableNews(subscription_id);
+                    sendTimetableNews(subscription);
                 } catch (Exception ex) {
                     Thread t = Thread.currentThread();
                     t.getUncaughtExceptionHandler().uncaughtException(t, ex);
                 }
             }
         };
+
         ScheduledFuture<?> schedule = scheduledExecutorService.schedule(runnable, initialDelay, TimeUnit.SECONDS);
-        runnableHashMap.put(subscription_id, schedule);
+        runnableHashMap.put(subscription.getId(), schedule);
+        subscriptionsHashMap.put(subscription.getId(), subscription.hashCode());
 
     }
     //Student which student to get the courses for
 
     //public unsubscribeTimtableNews (Student student)
 
-    public void sendTimetableNews(int subscription_id) {
-        ResultSet set = LiteSQL.onQuery("SELECT * FROM subscriptions WHERE subscription_id = " + subscription_id);
-        if (set == null) return;
-
-        int student_id = 0;
-        int type_id = -1;
-        int offsetDays = -1;
-
-        try {
-            student_id = set.getInt("student_id");
-            type_id = set.getInt("type_id");
-            offsetDays = set.getInt("offsetDays");
-            set.close();
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        logger.info("Sending timetable news for subscription_id: " + subscription_id + " student_id: " + student_id + " with offset of " + offsetDays + " days");
-        sendTimetableNews(student_id, type_id, offsetDays, subscription_id);
+    public CommunicationLayer registerCommunicationService(CommunicationService service) {
+        comServices.add(service);
+        return this;
     }
 
-    public void sendTimetableNews(int student_id, int type_id, int offsetDays, int subscription_id) {
-        ArrayList<Course> studentCourses = getCourseDataOfStudent(student_id, offsetDays);
+    public void sendTimetableNews(Subscription subscription) {
+        logger.info("Sending timetable news for subscription_id: " + subscription.getId() + " student_id: " + subscription.student.getId() + " with offset of " + subscription.getOffsetDays() + " days");
+
+        ArrayList<Course> studentCourses = getCourseDataOfStudent(subscription.student, subscription.getOffsetDays());
 
         CommunicationService comService = null;
-        switch (type_id) {
-            case 0:
+
+        switch (subscription.getClass().getSimpleName()) {
+            case "ComServiceDiscordSubscription":
                 //Discord
                 comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceDiscord).findFirst().get();
-                comService.sendTimetableNews(subscription_id, studentCourses);
+                comService.sendTimetableNews(subscription, studentCourses);
                 break;
-            case 1:
+            case "ComServiceWhatsAppSubscription":
                 //WhatsApp
                 comService = comServices.stream().filter(communicationService -> communicationService instanceof ComServiceWhatsApp).findFirst().get();
-                comService.sendTimetableNews(subscription_id, studentCourses);
 
-
+                comService.sendTimetableNews(subscription, studentCourses);
+                break;
             default:
                 break;
         }
     }
 
-    public ArrayList<Course> getCourseDataOfStudent(int student_id, int offsetDays) {
+    public ArrayList<Course> getCourseDataOfStudent(Student student, int offsetDays) {
         ZonedDateTime lDate = ZonedDateTime.now(zoneID).plusDays(offsetDays);
 
-        ArrayList<Course> courses = timeTableScrapper.getCourses(lDate);
-        ResultSet coursesSet = LiteSQL.onQuery("SELECT * FROM student_course WHERE student_id = " + student_id);
-        ArrayList<Course> studentCourses = new ArrayList<>();
-        try {
-            while (coursesSet.next()) {
-                int course_id = coursesSet.getInt("course_id");
-                if (courses.stream().anyMatch(c -> c.getId() == course_id)) {
-                    Course course = courses.stream().filter(c -> c.getId() == course_id).findFirst().get();
+        ArrayList<Course> allCourses = timeTableScrapper.getCourses(lDate);
+        ArrayList<Lesson> allLessons = timeTableScrapper.getLessons(lDate);
+        List<Course> studentCourses = student.courses.stream().toList();
 
-                    if (!course.getLessons().isEmpty()) {
-                        studentCourses.add(course);
-                    }
+        ArrayList<Course> filteredCourses = new ArrayList<Course>();
+
+        allCourses.forEach(course -> {
+            if (studentCourses.stream().anyMatch(c -> c.getId() == course.getId())) {
+                if (course.getLessons().size() > 0) {
+                    filteredCourses.add(course);
                 }
-
             }
-            coursesSet.close();
+        });
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return studentCourses;
+        return filteredCourses;
     }
 
-    public int getStudentIdByName(String prename, String surname) throws noStudentFoundException, moreThenOneStudentFoundException {
+    public Student getStudentByName(String prename, String surname) throws NoStudentFoundException, MoreThanOneStudentFoundException {
+        List<Student> students = studentRepository.findAllByPrenameOrAndSurname(prename, surname);
 
-        boolean prenameGiven = !prename.equals("");
-        boolean surnameGiven = !surname.equals("");
-
-        StringBuilder builder = new StringBuilder();
-        builder.append("SELECT id FROM student WHERE ");
-
-        int namesGiven = -1;
-        if (surnameGiven && prenameGiven) {
-            builder.append("prename = ? AND surname = ?");
-            namesGiven = 1;
-        } else if (prenameGiven) {
-            builder.append("prename = ?");
-            namesGiven = 0;
-        } else if (surnameGiven) {
-            builder.append("surname = ?");
-            namesGiven = 2;
-        }
-
-        PreparedStatement stmt = LiteSQL.prepareStatement(builder.toString());
-
-        try {
-            switch (namesGiven) {
-                case 0 -> {
-                    stmt.setString(1, prename);
-                    break;
-                }
-                case 1 -> {
-                    stmt.setString(1, prename);
-                    stmt.setString(2, surname);
-                    break;
-                }
-                case 2 -> stmt.setString(1, surname);
-                default -> throw new noStudentFoundException("No names given");
+        Student student;
+        if (students.size() > 0) {
+            if (students.size() > 1) {
+                throw new MoreThanOneStudentFoundException("Found more then one Student");
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            student = students.get(0);
+
+        } else {
+            throw new NoStudentFoundException("Can't find a student matching the given data");
         }
 
-
-        ResultSet set = LiteSQL.executeQuery(stmt);
-        int id = -1;
-        try {
-            if (set != null) {
-                if (set.next()) {
-                    id = set.getInt("id");
-                    if (set.next()) {
-                        set.close();
-                        throw new moreThenOneStudentFoundException("Found more then one Student");
-                    }
-                }
-            } else {
-                throw new noStudentFoundException("Can't find a student matching the given data");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        if (id <= 0) throw new noStudentFoundException("Can't find a student matching the given data");
-
-        return id;
+        return student;
     }
 
-    protected void stopTimer(int subscriptionId) {
+    protected void stopTimer(long subscriptionId) throws NullPointerException {
 
         ScheduledFuture<?> scheduledFuture = runnableHashMap.get(subscriptionId);
         try {
             scheduledFuture.cancel(false);
             logger.info("Timer for subscription_id: " + subscriptionId + " stopped");
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (NullPointerException ignored) {
         }
     }
+
 
 }
 

@@ -1,7 +1,7 @@
-package org.timeTable.CommunicationLayer.exceptions;
+package org.timeTable.communicationLayer.exceptions;
 
-public class subscriptionAlreadyExists extends Exception {
-    public subscriptionAlreadyExists(String errorMessage) {
+public class SubscriptionAlreadyExists extends Exception {
+    public SubscriptionAlreadyExists(String errorMessage) {
         super(errorMessage);
     }
 }

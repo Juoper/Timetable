@@ -1,7 +1,7 @@
-package org.timeTable.CommunicationLayer.exceptions;
+package org.timeTable.communicationLayer.exceptions;
 
-public class noStudentFoundException extends Exception {
-    public noStudentFoundException(String errorMessage) {
+public class NoStudentFoundException extends Exception {
+    public NoStudentFoundException(String errorMessage) {
         super(errorMessage);
     }
 }
