@@ -14,6 +14,7 @@ import org.timeTable.persistence.subscriptions.SubscriptionRepository;
 import org.timeTable.persistence.subscriptions.comServiceWhatsApp.ComServiceWhatsAppSubscription;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -106,20 +107,32 @@ public class ComServiceWhatsApp extends CommunicationService {
         StringBuilder builder = new StringBuilder();
         Collections.sort(courses, Comparator.comparing(o -> o.getLessons().iterator().next().getStartTime()));
 
-        builder.append("Diese Kurse fallen heute, am " + ZonedDateTime.now(zoneID).getDayOfWeek() + " aus\n\n");
+        ZonedDateTime zdtNow = ZonedDateTime.now(zoneID);
+        String stringDate = new SimpleDateFormat("dd.MM.yyyy").format(Date.from(zdtNow.toInstant()));
+
+        builder.append("Diese Kurse fallen heute am " + zdtNow.getDayOfWeek() + ", den " + stringDate + ", aus:\n\n");
 
         for (Course course : courses) {
             if (course.getLessons().stream().anyMatch(l -> l.getCellstate().equals("CANCEL"))) {
-                builder.append("Kurs: ")
+                String lessons = course.getLessons().toString();
+                lessons = lessons
+                        .replace("[", "")
+                        .replace("]", "")
+                        .replace(", ", "/");
+                lessons += " Std.";
+
+                builder.append("Kurs ")
                         .append(course.getName())
                         .append(" | ")
                         .append(course.getShortSubject())
                         .append(" | ")
                         .append(course.getTeacher())
+                        .append(" | ")
+                        .append(lessons)
                         .append("\n");
             }
         }
-        builder.append("\nAlle Angaben ohne Gewähr.");
+        builder.append("\n(_Alle Angaben ohne Gewähr_)");
         return builder;
 
     }
