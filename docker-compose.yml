@@ -51,4 +51,7 @@ services:
     volumes:
       - /.sessions:/app/.sessions
 
-
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
