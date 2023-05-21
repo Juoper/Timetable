@@ -114,7 +114,8 @@ public class ComServiceWhatsApp extends CommunicationService {
 
         for (Course course : courses) {
             if (course.getLessons().stream().anyMatch(l -> l.getCellstate().equals("CANCEL"))) {
-                String lessons = course.getLessons().toString();
+
+                String lessons = course.getLessons().stream().map(Lesson::getLessonHour).toList().toString();
                 lessons = lessons
                         .replace("[", "")
                         .replace("]", "")
@@ -126,7 +127,7 @@ public class ComServiceWhatsApp extends CommunicationService {
                         .append(" | ")
                         .append(course.getShortSubject())
                         .append(" | ")
-                        .append(course.getTeacher())
+                        .append(course.getTeacher().getAbbreviation())
                         .append(" | ")
                         .append(lessons)
                         .append("\n");

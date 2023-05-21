@@ -64,6 +64,14 @@ public class Lesson {
         return endTime;
     }
 
+    public int getLessonHour(){
+        String start = "";
+        start += startTime.getHour();
+        start += startTime.getMinute();
+        int startTime = Integer.parseInt(start);
+        return getLessonHour(startTime);
+    }
+
     public static int getLessonHour(int startTime) {
         int hour = switch (startTime) {
             case 800 -> 1;
@@ -79,8 +87,6 @@ public class Lesson {
             case 1615 -> 11;
             default -> 0;
         };
-
-
         return hour;
     }
 
