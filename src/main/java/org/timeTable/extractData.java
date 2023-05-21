@@ -1,46 +1,76 @@
 package org.timeTable;
 
-import org.apache.commons.lang3.StringUtils;
-import org.timeTable.models.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.timeTable.communicationLayer.CommunicationLayer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
 import org.apache.pdfbox.text.PDFTextStripperByArea;
+import org.timeTable.persistence.course.Course;
+import org.timeTable.persistence.course.CourseRepository;
+import org.timeTable.persistence.lesson.Lesson;
+import org.timeTable.persistence.lesson.LessonRepository;
+import org.timeTable.persistence.student.Student;
+import org.timeTable.persistence.student.StudentRepository;
+import org.timeTable.persistence.teacher.TeacherRepository;
+import org.timeTable.services.LessonService;
+import org.timeTable.services.StudentService;
+import org.timeTable.services.TeacherService;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLOutput;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.util.List;
 
 
+@Service
 public class extractData {
-    public static Year year = new Year();
 
-    //To Do:
-    //replace Ku  Ku/P1/HA with Ku Ku/P1/HA aka remove one withspace
+    private final CourseRepository courseRepository;
+    private final LessonRepository lessonRepository;
+    private final TeacherRepository teacherRepository;
+    private final StudentRepository studentRepository;
 
-    public static Year extractFromPdf(String path) throws IOException {
+    private final TeacherService teacherService;
+    private final LessonService lessonService;
+    private final StudentService studentService;
+
+    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
+
+    @Autowired
+    public extractData(CourseRepository courseRepository, LessonRepository lessonRepository, TeacherRepository teacherRepository, TeacherService teacherService, LessonService lessonService, StudentRepository studentRepository, StudentService studentService) {
+        this.courseRepository = courseRepository;
+        this.lessonRepository = lessonRepository;
+        this.teacherRepository = teacherRepository;
+        this.teacherService = teacherService;
+        this.lessonService = lessonService;
+        this.studentRepository = studentRepository;
+        this.studentService = studentService;
+    }
+
+    public void extractFromPdf(String path) throws IOException {
         //Loading an existing document
         File file = new File(path);
         PDDocument document = PDDocument.load(file);
         int pageCount = document.getDocumentCatalog().getPages().getCount();
 
         for (int i = 0; i < pageCount; i++) {
-            extractData.generateYear(document.getDocumentCatalog().getPages().get(i), i);
+            generateData(document.getDocumentCatalog().getPages().get(i), i);
         }
 
         document.close();
-
-        return year;
     }
 
-    public static void generateYear(PDPage page, int id) throws IOException {
+    public void generateData(PDPage page, int id) throws IOException {
         PDFTextStripperByArea stripperStudentName = new PDFTextStripperByArea();
         stripperStudentName.setSortByPosition(true);
 
-        Rectangle rectStudentName = new Rectangle(180, 3609 - 3450, 705, 50);
+        Rectangle rectStudentName = new Rectangle(180, 159, 1300, 50);
         stripperStudentName.addRegion("studentName", rectStudentName);
         stripperStudentName.extractRegions(page);
 
@@ -48,102 +78,100 @@ public class extractData {
         studentName = studentName.replace("\r\n", "");
         studentName = studentName.trim();
 
-        Student student = new Student(id + 1, studentName);
+        logger.info("Student: " + studentName);
 
-        year.addStudent(student);
-        Timetable timetable = new Timetable(student);
-
-        student.addTimetable(timetable);
+        Student student = studentService.getOrCreateStudent(studentName);
 
         PDFTextStripperByArea stripper = new PDFTextStripperByArea();
         stripper.setSortByPosition(true);
 
-        for (int y = 0; y < 11; y++) {
-            for (int x = 0; x < 5; x++) {
-                Rectangle rect = new Rectangle(500 + 385 * x, 309 + 130 * y, 385, 130);
-                stripper.addRegion("class" + x + y, rect);
-            }
-        }
+        prepareStripper(stripper);
 
         stripper.extractRegions(page);
+        for (int day = 0; day < 5; day++) {
+            for (int hour = 0; hour < 11; hour++) {
+                stripText(day, hour, student, stripper);
+            }
+        }
+        studentRepository.save(student);
+    }
 
-        for (int y = 0; y < 11; y++) {
-            for (int x = 0; x < 5; x++) {
-                String text = stripper.getTextForRegion("class" + x + y);
+    private void stripText(int day, int hour, Student student, PDFTextStripperByArea stripper) {
+        String text = stripper.getTextForRegion("class" + day + hour);
 
-                text = text.replaceFirst("^ ", "");
-                text = text.replaceFirst("^ \r\n", "");
+        text = text.replaceFirst("^ ", "");
+        text = text.replaceFirst("^ \r\n", "");
 
-                if (text.equals("\r\n")) {
-                    text = "Freistunde";
-                }
+        if (text.equals("\r\n")) {
+            text = "Freistunde";
+        }
 
-                text = text
-                        .replace("\r\n ", "")
-                        .replace("\r\n", "");
+        text = text
+                .replace("\r\n ", "")
+                .replace("\r\n", "");
+
+        //{Kursname} {Kurskürzel} {Lehrer}
+        String[] split = text.split(" ");
+
+        if (split.length == 3) {
+            String courseShortSubject = removeTypos(split[0]);
+            String courseName = removeTypos(split[1]);
+            String teacherAbbreviation = removeTypos(split[2]).toUpperCase();
+
+            if (teacherAbbreviation.equals("ISE") && courseName.equals("QWU")) {
+                courseName = "QWU_ISE";
+            }
+            if (courseName.equals("Smw/P1/")) {
+                courseName = courseName + teacherAbbreviation;
+            }
+
+            Course course = getOrCreateCourseByName(courseShortSubject, courseName, teacherAbbreviation);
 
 
-                String[] split = text.split(" ");
+            student.addCourse(course);
+            studentRepository.save(student);
 
+            teacherService.addCourseToTeacher(course.getTeacher(), course);
 
-                if (split.length == 3) {
-                    split[2] = split[2].toUpperCase();
+            LocalTime startTime = coordinateToStartTime(hour);
+            LocalTime endTime = startTime.plusMinutes(45);
 
-                    split[0] = removeTypos(split[0]);
-                    split[1] = removeTypos(split[1]);
-                    split[2] = removeTypos(split[2]);
+            Lesson lesson = lessonService.getLessonByCourseAndDayAndHour(course, DayOfWeek.of(day + 1), startTime, endTime);
 
-                    if (split[2].equals("ISE") && split[1].equals("QWU")) {
-                        split[1] = "QWU_ISE";
-                    }
+            course.addStudent(student);
+            course.addLesson(lesson);
+            courseRepository.save(course);
 
-                    if (split[1].equals("Smw/P1/")) {
-                        split[1] = split[1] + split[2];
-                    }
+        }
+    }
 
-                    Lesson lesson = new Lesson(x, y);
-                    Teacher teacher = new Teacher(split[2]);
+    private Course getOrCreateCourseByName(String courseShortSubject, String courseName, String teacherAbbreviation) {
+        //TODO move to courseService
+        List<Course> coursesByName = courseRepository.findByName(courseName);
+        Course course = null;
+        if (coursesByName == null || coursesByName.size() == 0) {
+            course = new Course(teacherService.getOrCreateTeacherByAbbreviation(teacherAbbreviation), courseName, courseShortSubject);
+            course = courseRepository.save(course);
+        } else if (coursesByName.size() == 1) {
+            course = coursesByName.get(0);
 
-                    teacher = year.addTeacher(teacher);
+        } else {
+            logger.error("More than one course with the same abbreviation found: " + courseName);
+        }
 
-                    Course course = new Course(teacher, split[0], split[1]);
-                    lesson.setCourse(course);
+        return course;
+    }
 
-                    lesson = year.addLesson(lesson);
-                    course = year.addCourse(course);
-
-                    timetable.addCourse(course);
-
-                    course.addLesson(lesson);
-                    course.addStudent(student);
-                    timetable.addLesson(lesson);
-
-                } else {
-                    Teacher teacher = new Teacher("free");
-                    teacher = year.addTeacher(teacher);
-
-                    Lesson lesson = new Lesson(x, y);
-
-                    Course course = new Course(teacher, split[0], "free");
-                    lesson.setCourse(course);
-
-                    lesson = year.addLesson(lesson);
-                    course = year.addCourse(course);
-
-                    timetable.addCourse(course);
-
-                    course.addLesson(lesson);
-                    course.addStudent(student);
-
-                    timetable.addLesson(lesson);
-                }
+    private void prepareStripper(PDFTextStripperByArea stripper) {
+        for (int hour = 0; hour < 11; hour++) {
+            for (int day = 0; day < 5; day++) {
+                Rectangle rect = new Rectangle(500 + 385 * day, 309 + 130 * hour, 385, 130);
+                stripper.addRegion("class" + day + hour, rect);
             }
         }
     }
 
-    public static String removeTypos(String text) {
-        
-
+    public String removeTypos(String text) {
         return text
 
                 .replace("|GOE", "GOE")
@@ -203,80 +231,47 @@ public class extractData {
                 ;
     }
 
+    private LocalTime coordinateToStartTime(int hour) {
+        LocalTime startTime = LocalTime.of(8, 0);
 
-    public void save() throws IOException {
-        //Database.createTables();
-        Year year = extractData.extractFromPdf("Stundenplan.pdf");        //Julian_Stundenplan.pdf, JC_Stundenplan.pdf
-
-
-        LiteSQL.onUpdate("DELETE FROM course");
-        LiteSQL.onUpdate("DELETE FROM sqlite_sequence WHERE name='course'");
-        LiteSQL.onUpdate("DELETE FROM teacher");
-        LiteSQL.onUpdate("DELETE FROM sqlite_sequence WHERE name='teacher'");
-        LiteSQL.onUpdate("DELETE FROM lesson");
-        LiteSQL.onUpdate("DELETE FROM sqlite_sequence WHERE name='lesson'");
-        LiteSQL.onUpdate("DELETE FROM student");
-        LiteSQL.onUpdate("DELETE FROM sqlite_sequence WHERE name='student'");
-        LiteSQL.onUpdate("DELETE FROM course_lesson");
-        LiteSQL.onUpdate("DELETE FROM sqlite_sequence WHERE name='course_lesson'");
-        LiteSQL.onUpdate("DELETE FROM course_teacher");
-        LiteSQL.onUpdate("DELETE FROM sqlite_sequence WHERE name='course_teacher'");
-        LiteSQL.onUpdate("DELETE FROM student_course");
-        LiteSQL.onUpdate("DELETE FROM sqlite_sequence WHERE name='student_course'");
-
-
-        year.getTeachers().forEach(teacher -> {
-            try {
-                //, prename, surname
-                ResultSet set = LiteSQL.onQuery("INSERT INTO teacher (abbreviation) VALUES ('" + teacher.getAbbreviation() + "') RETURNING id");
-                set.next();
-                teacher.setId(Integer.parseInt(set.getString("id")));
-                set.close();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        year.getCourses().forEach(course -> {
-
-            try {
-                ResultSet set = LiteSQL.onQuery("INSERT INTO course (name, subject, shortsubject) " + "VALUES ('" + course.getName() + "', '" + course.getSubject() + "', '" + course.getShortSubject() + "') RETURNING id");
-                int id = set.getInt("id");
-
-                course.setId(id);
-                set.close();
-
-                LiteSQL.onUpdate("INSERT INTO course_teacher (course_id, teacher_id) " +
-                        "VALUES (" + id + ", " + course.getTeacher().getId() + ")");
-
-                course.getStudents().forEach(student -> {
-                    LiteSQL.onUpdate("INSERT INTO student_course (student_id, course_id) " +
-                            "VALUES (" + student.getId() + ", " + id + ")");
-                });
-
-
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-
-            course.getLessons().forEach(lesson -> {
-
-                try {
-                    ResultSet set = LiteSQL.onQuery("INSERT INTO lesson (day, hour) VALUES ('" + lesson.getDay() + "', '" + lesson.getHour() + "') RETURNING id");
-                    int id = set.getInt("id");
-                    set.close();
-
-                    LiteSQL.onUpdate("INSERT INTO course_lesson (course_id, lesson_id) " +
-                            "VALUES (" + id + ", " + course.getId() + ")");
-
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        });
-        year.getStudents().forEach(student -> {
-            LiteSQL.onUpdate("INSERT INTO student (prename, surname) VALUES ('" + student.getPrename() + "', '" + student.getSurname() + "')");
-        });
+        switch (hour + 1) {
+            case 1:
+                startTime = LocalTime.of(8, 0);
+                break;
+            case 2:
+                startTime = LocalTime.of(8, 45);
+                break;
+            case 3:
+                startTime = LocalTime.of(9, 45);
+                break;
+            case 4:
+                startTime = LocalTime.of(10, 30);
+                break;
+            case 5:
+                startTime = LocalTime.of(11, 35);
+                break;
+            case 6:
+                startTime = LocalTime.of(12, 20);
+                break;
+            case 7:
+                startTime = LocalTime.of(13, 15);
+                break;
+            case 8:
+                startTime = LocalTime.of(14, 00);
+                break;
+            case 9:
+                startTime = LocalTime.of(14, 45);
+                break;
+            case 10:
+                startTime = LocalTime.of(15, 30);
+                break;
+            case 11:
+                startTime = LocalTime.of(16, 15);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid hour: " + hour);
+        }
+        return startTime;
     }
 
 }
