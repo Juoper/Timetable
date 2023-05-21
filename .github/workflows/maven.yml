@@ -30,7 +30,8 @@ jobs:
     - name: Build with Maven
       run: mvn clean package --file pom.xml
 
-    - run: ls ..
+    - run: ls ../..
+    - run: ls ../../..
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
@@ -50,6 +51,6 @@ jobs:
       name: Build and push
       uses: docker/build-push-action@v4
       with:
-        context: .
+        context: ./Timetable/Timetable
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/timetable:latest
