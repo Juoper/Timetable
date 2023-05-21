@@ -64,33 +64,10 @@ public class Lesson {
         return endTime;
     }
 
-    public static int getLessonHour(int startTime) {
-        int hour = switch (startTime) {
-            case 800 -> 1;
-            case 845 -> 2;
-            case 945 -> 3;
-            case 1030 -> 4;
-            case 1135 -> 5;
-            case 1220 -> 6;
-            case 1315 -> 7;
-            case 1400 -> 8;
-            case 1445 -> 9;
-            case 1530 -> 10;
-            case 1615 -> 11;
-            default -> 0;
-        };
-
-
-        return hour;
-    }
-
     public String toString() {
         return "Lesson:{" +
-                "id=" + id +
-                ", course=" + course.getName() +
-                ", day='" + day + '\'' +
-                ", startTime='" + startTime + '\'' +
-                ", cellstate='" + cellstate + '\'' +
+                ", startTime='" + startTime +
+                ", cellstate='" + cellstate +
                 '}';
     }
 
