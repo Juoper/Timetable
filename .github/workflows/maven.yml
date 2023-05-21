@@ -51,6 +51,6 @@ jobs:
       name: Build and push
       uses: docker/build-push-action@v4
       with:
-        context: ./Timetable/Timetable
+        context: /home/runner/work/Timetable/Timetable
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/timetable:latest
