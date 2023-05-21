@@ -56,3 +56,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/pi/.docker/config.json:/config.json
+    command: '--interval 3600'
