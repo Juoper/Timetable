@@ -120,7 +120,6 @@ public class ComServiceWhatsApp extends CommunicationService {
                         .replace("[", "")
                         .replace("]", "")
                         .replace(", ", "/");
-                lessons += " Std.";
 
                 builder.append("Kurs ")
                         .append(course.getName())
