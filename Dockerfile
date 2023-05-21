@@ -1,4 +1,4 @@
-FROM arm64v8/maven:3.9-amazoncorretto-17-debian AS build
+FROM maven:3.9-amazoncorretto-17-debian AS build
 RUN mkdir -p /workspace
 WORKDIR /workspace
 COPY pom.xml /workspace
