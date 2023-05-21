@@ -31,7 +31,7 @@ services:
       - db
 
   stundenplan:
-    image: stundenplan
+    image: jouper/timetable
     container_name: timeTableMain
     restart: "no"
     tty: true
