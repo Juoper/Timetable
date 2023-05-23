@@ -43,7 +43,7 @@ services:
       - whatsapp
 
   whatsapp:
-    image: devlikeapro/whatsapp-http-api:arm
+    image: jouper/whatsapp:arm
     container_name: whatsapp
     restart: always
     ports:
