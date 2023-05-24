@@ -77,7 +77,7 @@ public class ComServiceDiscord extends CommunicationService {
         ActionListener listener = new ActionListener();
         builder.setAutoReconnect(true).enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_PRESENCES).setMemberCachePolicy(MemberCachePolicy.ALL).enableCache(CacheFlag.ONLINE_STATUS, CacheFlag.ACTIVITY).addEventListeners(listener);
         builder.setStatus(OnlineStatus.ONLINE);
-        builder.setActivity(Activity.playing("Scraping your data"));
+        builder.setActivity(Activity.playing("versendet Stundenpläne"));
 
         jda = builder.build();
         verifiedUsers = new ArrayList<>();
