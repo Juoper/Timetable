@@ -31,7 +31,7 @@ services:
       - db
 
   stundenplan:
-    image: jouper/timetable
+    image: index.docker.io/jouper/timetable
     container_name: timeTableMain
     restart: "no"
     tty: true
@@ -43,7 +43,7 @@ services:
       - whatsapp
 
   whatsapp:
-    image: jouper/whatsapp:arm
+    image: index.docker.io/jouper/whatsapp:arm
     container_name: whatsapp
     restart: always
     ports:
