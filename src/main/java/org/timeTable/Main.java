@@ -24,7 +24,7 @@ public class Main {
     }
 
     @Autowired
-    public Main(CommunicationLayer communicationLayer, StudentRepository studentRepository, CourseRepository courseRepository) {
+    public Main(CommunicationLayer communicationLayer) {
         communicationLayer.startTimers();
 
     }

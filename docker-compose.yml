@@ -1,7 +1,7 @@
 version: "0.1"
 
 services:
-  db:
+  database:
     image: mariadb
     container_name: timetable_mariadb
     environment:
@@ -28,7 +28,7 @@ services:
     volumes:
       - /sessions
     links:
-      - db
+      - database
 
   stundenplan:
     image: jouper/timetable
@@ -39,7 +39,7 @@ services:
     volumes:
       - /data
     links:
-      - db
+      - database
       - whatsapp
 
   whatsapp:
