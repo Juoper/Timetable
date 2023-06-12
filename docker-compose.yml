@@ -31,19 +31,21 @@ services:
       - database
 
   stundenplan:
-    image: jouper/timetable
+    image: index.docker.io/jouper/timetable
     container_name: timeTableMain
     restart: "no"
     tty: true
     stdin_open: true
     volumes:
       - /data
+    env_file:
+      - stack.env
     links:
       - database
       - whatsapp
 
   whatsapp:
-    image: devlikeapro/whatsapp-http-api:arm
+    image: index.docker.io/jouper/whatsapp:arm
     container_name: whatsapp
     restart: always
     ports:
