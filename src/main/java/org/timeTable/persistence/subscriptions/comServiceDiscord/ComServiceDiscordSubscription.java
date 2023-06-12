@@ -1,10 +1,12 @@
 package org.timeTable.persistence.subscriptions.comServiceDiscord;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import org.timeTable.persistence.student.Student;
 import org.timeTable.persistence.subscriptions.Subscription;
 
-import javax.persistence.*;
 import java.time.LocalTime;
 
 @Entity

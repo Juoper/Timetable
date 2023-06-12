@@ -1,12 +1,12 @@
 package org.timeTable.persistence.subscriptions.comServiceWhatsApp;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 import org.timeTable.persistence.student.Student;
 import org.timeTable.persistence.subscriptions.Subscription;
 
-import javax.persistence.Entity;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
-import javax.persistence.OneToMany;
+
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)

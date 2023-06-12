@@ -1,9 +1,9 @@
 package org.timeTable.persistence.subscriptions;
 
+import jakarta.persistence.*;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.timeTable.persistence.student.Student;
 
-import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalTime;
 

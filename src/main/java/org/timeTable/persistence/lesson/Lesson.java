@@ -1,9 +1,9 @@
 package org.timeTable.persistence.lesson;
 
+import jakarta.persistence.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.timeTable.persistence.course.Course;
-import javax.persistence.*;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;

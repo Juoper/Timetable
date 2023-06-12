@@ -1,12 +1,12 @@
 package org.timeTable.persistence.course;
 
+import jakarta.persistence.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.timeTable.persistence.student.Student;
 import org.timeTable.persistence.teacher.Teacher;
 import org.timeTable.persistence.lesson.Lesson;
 
-import javax.persistence.*;
 import java.util.*;
 
 

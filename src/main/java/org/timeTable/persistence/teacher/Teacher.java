@@ -1,9 +1,9 @@
 package org.timeTable.persistence.teacher;
 
+import jakarta.persistence.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.timeTable.persistence.course.Course;
 
-import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
