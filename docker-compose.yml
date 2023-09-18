@@ -2,7 +2,7 @@ version: "0.1"
 
 services:
   database:
-    image: mariadb
+    image: mariadb:10.6.14
     container_name: timetable_mariadb
     environment:
       - MYSQL_ROOT_PASSWORD=root
