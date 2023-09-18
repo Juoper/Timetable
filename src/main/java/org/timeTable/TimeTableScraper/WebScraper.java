@@ -71,8 +71,8 @@ public class WebScraper {
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("school", "gym-ottobrunn");
-        parameters.put("j_username", "q11");
-        parameters.put("j_password", "GO#webuntis01");
+        parameters.put("j_username", "q12");
+        parameters.put("j_password", "GO#webuntis02");
         parameters.put("token", "");
 
         String params = getParamsString(parameters);
