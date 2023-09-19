@@ -4,14 +4,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.timeTable.communicationLayer.CommunicationLayer;
-import org.timeTable.persistence.course.Course;
-import org.timeTable.persistence.course.CourseRepository;
-import org.timeTable.persistence.student.Student;
-import org.timeTable.persistence.student.StudentRepository;
+import org.timeTable.CommunicationLayer.CommunicationLayer;
 
 import java.time.ZoneId;
-import java.util.ArrayList;
 
 
 @SpringBootApplication

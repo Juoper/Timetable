@@ -3,7 +3,7 @@ package org.timeTable.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.timeTable.communicationLayer.CommunicationLayer;
+import org.timeTable.CommunicationLayer.CommunicationLayer;
 import org.timeTable.persistence.course.Course;
 import org.timeTable.persistence.lesson.Lesson;
 import org.timeTable.persistence.lesson.LessonRepository;

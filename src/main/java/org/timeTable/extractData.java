@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.timeTable.communicationLayer.CommunicationLayer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
@@ -56,8 +55,10 @@ public class extractData {
         int pageCount = document.getDocumentCatalog().getPages().getCount();
 
         for (int i = 0; i < pageCount; i++) {
-            generateData(document.getDocumentCatalog().getPages().get(i), i, 400);
             generateData(document.getDocumentCatalog().getPages().get(i), i, 0);
+            if (i != 78) {
+                generateData(document.getDocumentCatalog().getPages().get(i), i, 400);
+            }
         }
 
         document.close();
@@ -67,7 +68,7 @@ public class extractData {
         PDFTextStripperByArea stripperStudentName = new PDFTextStripperByArea();
         stripperStudentName.setSortByPosition(true);
 
-        Rectangle rectStudentName = new Rectangle(40, 395 + offset, 165, 50);
+        Rectangle rectStudentName = new Rectangle(30, 30 + offset, 180, 20);
         stripperStudentName.addRegion("studentName", rectStudentName);
         stripperStudentName.extractRegions(page);
 
@@ -97,15 +98,15 @@ public class extractData {
         String text = stripper.getTextForRegion("class" + day + hour);
 
         text = text.replaceFirst("^ ", "");
-        text = text.replaceFirst("^ \r\n", "");
+        text = text.replaceFirst("^ \n", "");
 
-        if (text.equals("\r\n")) {
+        if (text.equals("\n")) {
             text = "Freistunde";
         }
 
         text = text
-                .replace("\r\n ", "")
-                .replace("\r\n", "");
+                .replace("\n ", "")
+                .replace("\n", "");
 
         //{Kursname} {Kurskürzel} {Lehrer}
         String[] split = text.split(" ");
@@ -114,13 +115,6 @@ public class extractData {
             String courseShortSubject = removeTypos(split[0]);
             String courseName = removeTypos(split[1]);
             String teacherAbbreviation = removeTypos(split[2]).toUpperCase();
-
-            if (teacherAbbreviation.equals("ISE") && courseName.equals("QWU")) {
-                courseName = "QWU_ISE";
-            }
-            if (courseName.equals("Smw/P1/")) {
-                courseName = courseName + teacherAbbreviation;
-            }
 
             Course course = getOrCreateCourseByName(courseShortSubject, courseName, teacherAbbreviation);
 
@@ -162,7 +156,7 @@ public class extractData {
     private void prepareStripper(PDFTextStripperByArea stripper, int offset) {
         for (int hour = 0; hour < 11; hour++) {
             for (int day = 0; day < 5; day++) {
-                Rectangle rect = new Rectangle(116 + 90 * day, 347 + offset - (30 * hour), 91, 30);
+                Rectangle rect = new Rectangle(120 + 90 * day, 72 + offset + (30 * hour), 91, 30);
                 stripper.addRegion("class" + day + hour, rect);
             }
         }

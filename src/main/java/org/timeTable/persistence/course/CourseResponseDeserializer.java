@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.timeTable.communicationLayer.CommunicationLayer;
+import org.timeTable.CommunicationLayer.CommunicationLayer;
 
 import java.lang.reflect.Type;
 import java.util.HashSet;
@@ -47,7 +47,6 @@ public class CourseResponseDeserializer implements JsonDeserializer<CourseRespon
                 if (courseResponse.elements.stream().noneMatch(c -> Objects.equals(c.getName(), course.getName()))) {
                     courseResponse.elements.add(course);
                 }
-
             }
         }
 

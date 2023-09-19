@@ -3,7 +3,7 @@ package org.timeTable.persistence.lesson;
 import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.timeTable.communicationLayer.CommunicationLayer;
+import org.timeTable.CommunicationLayer.CommunicationLayer;
 import org.timeTable.persistence.course.Course;
 
 import java.lang.reflect.Type;
@@ -25,8 +25,7 @@ public class LessonResponseDeserializer implements JsonDeserializer<LessonRespon
     }
 
     @Override
-    public LessonResponse deserialize(JsonElement json, Type type,
-                                      JsonDeserializationContext context) throws JsonParseException {
+    public LessonResponse deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
 //TODO check if exisits otherwise print out no course found
         JsonArray jArray = (JsonArray) json;
 
@@ -56,7 +55,7 @@ public class LessonResponseDeserializer implements JsonDeserializer<LessonRespon
                 Optional<Course> course = courses.stream().filter(c -> c.getUntisId() == id).findFirst();
 
                 if (course.isEmpty()) {
-                    //logger.warn("Found lesson without matching database entry: " + id);
+                    logger.warn("Found lesson without matching database entry: " + id);
                 } else {
                     Lesson lesson = new Lesson(course.get(), this.date.getDayOfWeek(), startTime, endTime, cellState);
                     course.get().addLesson(lesson);

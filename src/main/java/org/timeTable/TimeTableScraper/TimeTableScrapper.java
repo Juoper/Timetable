@@ -16,8 +16,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import static org.timeTable.Main.zoneID;
-
 @Service
 public class TimeTableScrapper {
 
@@ -57,12 +55,12 @@ public class TimeTableScrapper {
 
         JsonElement jelement = JsonParser.parseString(timeTable);
 
-        JsonObject jobject = jelement.getAsJsonObject();
-        jobject = jobject.getAsJsonObject("data").getAsJsonObject("result").getAsJsonObject("data");
+        JsonObject data = jelement.getAsJsonObject();
+        data = data.getAsJsonObject("data").getAsJsonObject("result").getAsJsonObject("data");
 
 
-        JsonArray jarrayCourses = jobject.getAsJsonArray("elements");
-        JsonArray jarrayLessons = jobject.getAsJsonObject("elementPeriods").getAsJsonArray("1052");
+        JsonArray jarrayCourses = data.getAsJsonArray("elements");
+        JsonArray jarrayLessons = data.getAsJsonObject("elementPeriods").getAsJsonArray("1490");
 
 
         //Parse the courses and lessons

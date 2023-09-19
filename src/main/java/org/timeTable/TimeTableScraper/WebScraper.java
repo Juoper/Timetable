@@ -7,7 +7,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -49,7 +48,7 @@ public class WebScraper {
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("elementType", "1");
-        parameters.put("elementId", "1052");
+        parameters.put("elementId", "1490");
         parameters.put("date", DateTimeFormatter.ofPattern("yyyy-MM-dd").format(date));                          //LocalDate.now().toString()
 
         String params = getParamsString(parameters);
