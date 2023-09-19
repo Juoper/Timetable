@@ -32,21 +32,17 @@ import java.util.List;
 public class extractData {
 
     private final CourseRepository courseRepository;
-    private final LessonRepository lessonRepository;
-    private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
 
     private final TeacherService teacherService;
     private final LessonService lessonService;
     private final StudentService studentService;
 
-    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
+    private final Logger logger = LoggerFactory.getLogger(extractData.class);
 
     @Autowired
     public extractData(CourseRepository courseRepository, LessonRepository lessonRepository, TeacherRepository teacherRepository, TeacherService teacherService, LessonService lessonService, StudentRepository studentRepository, StudentService studentService) {
         this.courseRepository = courseRepository;
-        this.lessonRepository = lessonRepository;
-        this.teacherRepository = teacherRepository;
         this.teacherService = teacherService;
         this.lessonService = lessonService;
         this.studentRepository = studentRepository;
@@ -60,17 +56,18 @@ public class extractData {
         int pageCount = document.getDocumentCatalog().getPages().getCount();
 
         for (int i = 0; i < pageCount; i++) {
-            generateData(document.getDocumentCatalog().getPages().get(i), i);
+            generateData(document.getDocumentCatalog().getPages().get(i), i, 400);
+            generateData(document.getDocumentCatalog().getPages().get(i), i, 0);
         }
 
         document.close();
     }
 
-    public void generateData(PDPage page, int id) throws IOException {
+    public void generateData(PDPage page, int id, int offset) throws IOException {
         PDFTextStripperByArea stripperStudentName = new PDFTextStripperByArea();
         stripperStudentName.setSortByPosition(true);
 
-        Rectangle rectStudentName = new Rectangle(180, 159, 1300, 50);
+        Rectangle rectStudentName = new Rectangle(40, 395 + offset, 165, 50);
         stripperStudentName.addRegion("studentName", rectStudentName);
         stripperStudentName.extractRegions(page);
 
@@ -85,7 +82,7 @@ public class extractData {
         PDFTextStripperByArea stripper = new PDFTextStripperByArea();
         stripper.setSortByPosition(true);
 
-        prepareStripper(stripper);
+        prepareStripper(stripper, offset);
 
         stripper.extractRegions(page);
         for (int day = 0; day < 5; day++) {
@@ -162,10 +159,10 @@ public class extractData {
         return course;
     }
 
-    private void prepareStripper(PDFTextStripperByArea stripper) {
+    private void prepareStripper(PDFTextStripperByArea stripper, int offset) {
         for (int hour = 0; hour < 11; hour++) {
             for (int day = 0; day < 5; day++) {
-                Rectangle rect = new Rectangle(500 + 385 * day, 309 + 130 * hour, 385, 130);
+                Rectangle rect = new Rectangle(116 + 90 * day, 347 + offset - (30 * hour), 91, 30);
                 stripper.addRegion("class" + day + hour, rect);
             }
         }

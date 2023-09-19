@@ -49,7 +49,7 @@ public class ComServiceWhatsApp extends CommunicationService {
 
         courses.sort(Comparator.comparing(o -> o.getLessons().iterator().next().getStartTime()));
 
-        if (Objects.equals(prename, "Q11")) {
+        if (Objects.equals(prename, "Q12")) {
             try {
                 builder = buildTextForQ11(courses);
             } catch (NoCanceledCoursesException e) {
