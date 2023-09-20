@@ -1,11 +1,11 @@
-package org.timeTable.communicationLayer.services;
+package org.timeTable.CommunicationLayer.services;
 
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.timeTable.communicationLayer.CommunicationLayer;
-import org.timeTable.communicationLayer.CommunicationService;
+import org.timeTable.CommunicationLayer.CommunicationLayer;
+import org.timeTable.CommunicationLayer.CommunicationService;
 import org.timeTable.communicationLayer.exceptions.NoCanceledCoursesException;
 import org.timeTable.persistence.course.Course;
 import org.timeTable.persistence.lesson.Lesson;

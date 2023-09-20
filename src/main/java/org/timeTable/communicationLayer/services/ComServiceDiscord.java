@@ -1,4 +1,4 @@
-package org.timeTable.communicationLayer.services;
+package org.timeTable.CommunicationLayer.services;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.timeTable.communicationLayer.CommunicationLayer;
-import org.timeTable.communicationLayer.CommunicationService;
+import org.timeTable.CommunicationLayer.CommunicationLayer;
+import org.timeTable.CommunicationLayer.CommunicationService;
 import org.timeTable.communicationLayer.exceptions.MoreThanOneStudentFoundException;
 import org.timeTable.communicationLayer.exceptions.NoStudentFoundException;
 import org.timeTable.communicationLayer.exceptions.SubscriptionAlreadyExists;
@@ -42,8 +42,8 @@ import org.timeTable.persistence.subscriptions.comServiceDiscord.ComServiceDisco
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 @Service
 public class ComServiceDiscord extends CommunicationService {
@@ -57,7 +57,7 @@ public class ComServiceDiscord extends CommunicationService {
 
     private final ComServiceDiscordRepository comServiceDiscordRepository;
 
-    private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
+    private final Logger logger = LoggerFactory.getLogger(ComServiceDiscord.class);
     private final CommunicationLayer communicationLayer;
 
     //type ID: 0

@@ -1,4 +1,4 @@
-package org.timeTable.communicationLayer;
+package org.timeTable.CommunicationLayer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.timeTable.communicationLayer.exceptions.MoreThanOneStudentFoundException;
 import org.timeTable.communicationLayer.exceptions.NoStudentFoundException;
-import org.timeTable.communicationLayer.services.ComServiceDiscord;
-import org.timeTable.communicationLayer.services.ComServiceWhatsApp;
+import org.timeTable.CommunicationLayer.services.ComServiceDiscord;
+import org.timeTable.CommunicationLayer.services.ComServiceWhatsApp;
 import org.timeTable.TimeTableScraper.TimeTableScrapper;
 import org.timeTable.persistence.course.Course;
 import org.timeTable.persistence.lesson.Lesson;

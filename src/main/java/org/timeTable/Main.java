@@ -1,4 +1,5 @@
 package org.timeTable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import java.time.ZoneId;
 public class Main {
     public static ZoneId zoneID = ZoneId.of( "Europe/Paris");
     private final Logger logger = LoggerFactory.getLogger(CommunicationLayer.class);
+
     public static void main(String[] args) throws InterruptedException {
 
         SpringApplication.run(Main.class, args);
