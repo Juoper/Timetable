@@ -88,6 +88,9 @@ public class ComServiceWhatsApp extends CommunicationService {
 
         try {
             Response response = client.newCall(request).execute();
+            if (!response.isSuccessful()) {
+                logger.info("Response wasn't successfull: " + response);
+            }
             response.close();
         } catch (IOException e) {
             logger.error(e.toString());
