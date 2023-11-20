@@ -1,5 +1,8 @@
 package org.timeTable.communicationLayer.services;
 
+import java.util.ArrayList;
+import java.util.Scanner;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,9 +12,6 @@ import org.timeTable.CommunicationLayer.CommunicationService;
 import org.timeTable.persistence.course.Course;
 import org.timeTable.persistence.subscriptions.Subscription;
 import org.timeTable.persistence.subscriptions.SubscriptionRepository;
-
-import java.util.ArrayList;
-import java.util.Scanner;
 
 @Service
 public class ComServiceCommandLine extends CommunicationService {
@@ -37,19 +37,23 @@ public class ComServiceCommandLine extends CommunicationService {
             while (loop) {
 
                 String line = scanner.nextLine();
-                switch (line.toLowerCase()) {
-                    case "stop" -> {
-                        stopService();
-                        loop = false;
-                    }
-                    case "help" -> {
-                        logger.info("Commands:");
-                        logger.info("stop");
-                        logger.info("help");
-                        logger.info("updatesubscriptions");
-                    }
-                    case "updatesubscriptions" -> updateSubscriptions();
-                    default -> logger.info("Unknown command");
+
+                if (line.toLowerCase().startsWith("stop")) {
+                    stopService();
+                    loop = false;
+                } else if (line.toLowerCase().startsWith("help")) {
+                    logger.info("Commands:");
+                    logger.info("stop");
+                    logger.info("help");
+                    logger.info("updatesubscriptions");
+                } else if (line.toLowerCase().startsWith("updatesubscriptions")) {
+                    updateSubscriptions();
+                } else if (line.toLowerCase().startsWith("getsubscription")) {
+                    subscriptionRepository.findById(Long.valueOf(line.split(" ")[1])).ifPresent(subscription -> {
+                        logger.info(subscription.toString());
+                    });
+                } else {
+                    logger.info("Unknown command");
                 }
             }
         });
