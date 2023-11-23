@@ -1,6 +1,23 @@
 package org.timeTable.CommunicationLayer.services;
 
-import okhttp3.*;
+import static org.timeTable.Main.zoneID;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -12,14 +29,6 @@ import org.timeTable.persistence.lesson.Lesson;
 import org.timeTable.persistence.subscriptions.Subscription;
 import org.timeTable.persistence.subscriptions.SubscriptionRepository;
 import org.timeTable.persistence.subscriptions.comServiceWhatsApp.ComServiceWhatsAppSubscription;
-
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.util.*;
-
-import static org.timeTable.Main.zoneID;
 
 @Service
 public class ComServiceWhatsApp extends CommunicationService {
@@ -100,14 +109,15 @@ public class ComServiceWhatsApp extends CommunicationService {
     }
 
     private StringBuilder buildTextForQ11(ArrayList<Course> courses) throws NoCanceledCoursesException {
+        StringBuilder builder = new StringBuilder();
 
         if (courses.stream().filter(course -> course.getLessons().stream().anyMatch(l -> l.getCellstate().equals("CANCEL"))).toList().isEmpty()) {
-            throw new NoCanceledCoursesException();
+
+            return builder.append("Heute fallen keine Kurse aus!");
         }
 
         logger.info("Building text for Q11 at {} ", courses.size());
 
-        StringBuilder builder = new StringBuilder();
         Collections.sort(courses, Comparator.comparing(o -> o.getLessons().iterator().next().getStartTime()));
 
         ZonedDateTime zdtNow = ZonedDateTime.now(zoneID);
