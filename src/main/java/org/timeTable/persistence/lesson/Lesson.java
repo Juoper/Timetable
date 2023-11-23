@@ -1,15 +1,22 @@
 package org.timeTable.persistence.lesson;
 
-import jakarta.persistence.*;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.timeTable.persistence.course.Course;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Transient;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.jetbrains.annotations.NotNull;
+import org.timeTable.persistence.course.Course;
+
 @Entity
-public class Lesson {
+public class Lesson implements Comparable<Lesson> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -118,6 +125,11 @@ public class Lesson {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public int compareTo(@NotNull Lesson o) {
+        return getStartTime().compareTo(o.getStartTime());
     }
 }
 
