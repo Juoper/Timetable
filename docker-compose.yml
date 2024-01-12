@@ -50,6 +50,8 @@ services:
     restart: always
     ports:
       - 3000:3000
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
 
   watchtower:
     image: containrrr/watchtower
