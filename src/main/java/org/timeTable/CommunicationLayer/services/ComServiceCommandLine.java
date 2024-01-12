@@ -1,4 +1,4 @@
-package org.timeTable.communicationLayer.services;
+package org.timeTable.CommunicationLayer.services;
 
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -46,13 +46,26 @@ public class ComServiceCommandLine extends CommunicationService {
                     logger.info("stop");
                     logger.info("help");
                     logger.info("updatesubscriptions");
+                    logger.info("getsubscription");
+                    logger.info("sendsubscription <id>");
                 } else if (line.toLowerCase().startsWith("updatesubscriptions")) {
                     updateSubscriptions();
                 } else if (line.toLowerCase().startsWith("getsubscription")) {
                     subscriptionRepository.findById(Long.valueOf(line.split(" ")[1])).ifPresent(subscription -> {
                         logger.info(subscription.toString());
                     });
-                } else {
+                } else if (line.toLowerCase().startsWith("sendsubscription")) {
+                    if (line.split(" ").length < 2) {
+                        logger.warn("Usage: sendsubscription <id>");
+                        return;
+                    }
+                    var subscription = subscriptionRepository.findById(Long.valueOf(line.split(" ")[1]));
+                    if (subscription.isEmpty()) {
+                        logger.warn("Subscription not found");
+                        return;
+                    }
+                    communicationLayer.sendTimetableNews(subscription.get());
+                }else {
                     logger.info("Unknown command");
                 }
             }

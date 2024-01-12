@@ -35,24 +35,35 @@ public class ComServiceWhatsApp extends CommunicationService {
     private final Logger logger = LoggerFactory.getLogger(ComServiceWhatsApp.class);
     private final CommunicationLayer communicationLayer;
 
-    public ComServiceWhatsApp(SubscriptionRepository subscriptionRepository, CommunicationLayer communicationLayer) {
-        super(subscriptionRepository,communicationLayer);
+    public ComServiceWhatsApp(
+        SubscriptionRepository subscriptionRepository,
+        CommunicationLayer communicationLayer
+    ) {
+        super(subscriptionRepository, communicationLayer);
         this.communicationLayer = communicationLayer;
         communicationLayer.registerCommunicationService(this);
-
 
         logger.info("WhatsApp online");
     }
 
-    public void sendTimetableNews(Subscription subscription, ArrayList<Course> courses) {
+    public void sendTimetableNews(
+        Subscription subscription,
+        ArrayList<Course> courses
+    ) {
 
         if (subscription instanceof ComServiceWhatsAppSubscription comServiceWhatsAppSubscription) {
             sendTimetableNews(comServiceWhatsAppSubscription.getPhone_number(), comServiceWhatsAppSubscription.getStudent().getPrename(), courses);
-            logger.info("Sending timetable news to " + subscription.student.getPrename() + " " + subscription.student.getSurname() + " with phone number: " + comServiceWhatsAppSubscription.getPhone_number() + " at " + LocalDateTime.now());
+            logger.info(
+                "Sending timetable news to " + subscription.student.getPrename() + " " + subscription.student.getSurname() + " with phone number: " + comServiceWhatsAppSubscription.getPhone_number() +
+                " at " + LocalDateTime.now());
         }
     }
 
-    private void sendTimetableNews(String phoneNumber, String prename, ArrayList<Course> courses) {
+    private void sendTimetableNews(
+        String phoneNumber,
+        String prename,
+        ArrayList<Course> courses
+    ) {
 
         StringBuilder builder = new StringBuilder();
 
@@ -69,31 +80,31 @@ public class ComServiceWhatsApp extends CommunicationService {
 
             for (Course course : courses) {
                 builder.append("Course: ")
-                        .append(course.getName())
-                        .append(" | ")
-                        .append(course.getShortSubject())
-                        .append("\n");
+                       .append(course.getName())
+                       .append(" | ")
+                       .append(course.getShortSubject())
+                       .append("\n");
                 List<Lesson> lessonList = course.getLessons().stream().toList();
                 for (Lesson lesson : lessonList) {
                     builder.append(lesson.getStartTime()).append(" - ").append(lesson.getEndTime()).append(" | ")
-                            .append(lesson.getCellstate())
-                            .append("\n");
+                           .append(lesson.getCellstate())
+                           .append("\n");
                 }
             }
         }
 
         OkHttpClient client = new OkHttpClient();
         RequestBody body = new FormBody.Builder()
-                .add("chatId", phoneNumber)
-                .add("text", builder.toString())
-                .add("session", "default")
-                .build();
+                               .add("chatId", phoneNumber)
+                               .add("text", builder.toString())
+                               .add("session", "default")
+                               .build();
 
         Request request = new Request.Builder()
-                .url("http://whatsapp:3000/api/sendText")
-                .post(body)
-                .addHeader("content-type", "application/json")
-                .build();
+                              .url("http://whatsapp:3000/api/sendText")
+                              .post(body)
+                              .addHeader("content-type", "application/json")
+                              .build();
 
         try {
             Response response = client.newCall(request).execute();
@@ -128,21 +139,24 @@ public class ComServiceWhatsApp extends CommunicationService {
         for (Course course : courses) {
             if (course.getLessons().stream().anyMatch(l -> l.getCellstate().equals("CANCEL"))) {
 
-                String lessons = course.getLessons().stream().map(l -> Lesson.getLessonHour(l.getStartTime())).toList().toString();
+                String lessons = course.getLessons().stream()
+                                       .filter(lesson -> lesson.getCellstate().equals("CANCEL"))
+                                       .sorted()
+                                       .map(l -> Lesson.getLessonHour(l.getStartTime())).toList().toString();
                 lessons = lessons
-                        .replace("[", "")
-                        .replace("]", "")
-                        .replace(", ", "/");
+                              .replace("[", "")
+                              .replace("]", "")
+                              .replace(", ", "/");
 
                 builder.append("Kurs ")
-                        .append(course.getName())
-                        .append(" | ")
-                        .append(course.getShortSubject())
-                        .append(" | ")
-                        .append(course.getTeacher().getAbbreviation())
-                        .append(" | ")
-                        .append(lessons)
-                        .append("\n");
+                       .append(course.getName())
+                       .append(" | ")
+                       .append(course.getShortSubject())
+                       .append(" | ")
+                       .append(course.getTeacher().getAbbreviation())
+                       .append(" | ")
+                       .append(lessons)
+                       .append("\n");
             }
         }
         builder.append("\n(_Alle Angaben ohne Gewähr_)");
