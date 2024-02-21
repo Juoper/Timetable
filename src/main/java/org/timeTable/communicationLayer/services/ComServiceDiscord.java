@@ -1,5 +1,14 @@
 package org.timeTable.CommunicationLayer.services;
 
+import java.awt.Color;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -38,12 +47,6 @@ import org.timeTable.persistence.subscriptions.Subscription;
 import org.timeTable.persistence.subscriptions.SubscriptionRepository;
 import org.timeTable.persistence.subscriptions.comServiceDiscord.ComServiceDiscordRepository;
 import org.timeTable.persistence.subscriptions.comServiceDiscord.ComServiceDiscordSubscription;
-
-import java.awt.*;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.*;
 
 @Service
 public class ComServiceDiscord extends CommunicationService {
@@ -108,7 +111,12 @@ public class ComServiceDiscord extends CommunicationService {
 
         EmbedBuilder builder = new EmbedBuilder();
 
-        builder.setTitle("Your timetable for " + courses.get(0).getLessons().iterator().next().getDay()).setAuthor(subscription.getStudent().getPrename() + " " + subscription.getStudent().getSurname()).setColor(new Color(9565856)).setFooter("Made with love by Julian Thanner", "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Heart_coraz%C3%B3n.svg/1200px-Heart_coraz%C3%B3n.svg.png");
+        try {
+            builder.setTitle("Your timetable for " + courses.get(0).getLessons().iterator().next().getDay()).setAuthor(subscription.getStudent().getPrename() + " " + subscription.getStudent().getSurname()).setColor(new Color(9565856)).setFooter("Made with love by Julian Thanner", "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Heart_coraz%C3%B3n.svg/1200px-Heart_coraz%C3%B3n.svg.png");
+        } catch (IndexOutOfBoundsException e) {
+            channel.sendMessage("No Courses found this day").queue();
+            return;
+        }
 
         courses.sort(Comparator.comparing(o -> o.getLessons().iterator().next().getStartTime()));
 
