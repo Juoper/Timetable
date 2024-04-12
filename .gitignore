@@ -1,0 +1,6 @@
+/target/
+datenbank.db
+*pdf
+datenbank/
+stack.env
+/.idea/

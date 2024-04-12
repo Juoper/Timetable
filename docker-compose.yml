@@ -1,0 +1,61 @@
+version: "0.1"
+
+services:
+  database:
+    image: mariadb:10.6.14
+    container_name: timetable_mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=timetable
+    volumes:
+      - ./database:/var/lib/mysql
+    ports:
+      - 3306:3306
+    restart: always
+    entrypoint:
+      sh -c "
+      echo 'CREATE DATABASE IF NOT EXISTS timetable;' > /docker-entrypoint-initdb.d/init.sql;
+      /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      "
+  phpmyadmin:
+    image: arm64v8/phpmyadmin
+    container_name: timetable_phpmyadmin
+    environment:
+      - PMA_HOST=database
+    restart: always
+    ports:
+      - 3001:80
+    volumes:
+      - /sessions
+    links:
+      - database
+
+  stundenplan:
+    image: index.docker.io/jouper/timetable
+    container_name: timeTableMain
+    restart: "no"
+    tty: true
+    stdin_open: true
+    volumes:
+      - /data
+    env_file:
+      - stack.env
+    links:
+      - database
+      - whatsapp
+
+  whatsapp:
+    image: index.docker.io/jouper/whatsapp:arm
+    container_name: whatsapp
+    restart: always
+    ports:
+      - 3000:3000
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/pi/.docker/config.json:/config.json
+    command: '--interval 300'
